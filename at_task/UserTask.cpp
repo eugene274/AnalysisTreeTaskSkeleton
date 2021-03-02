@@ -70,15 +70,22 @@ ATI2::Variable UserFillTask::GetVar(const std::string &name) const {
 
 void UserFillTask::ATI2_Finish() {
   assert(UseATI2());
-  *out_config_ = AnalysisTree::Configuration(GetName());
-  for (auto &branch_item : branches_out_) {
-    out_config_->AddBranchConfig(branch_item.second->GetConfig());
+  if (out_config_) {
+    *out_config_ = AnalysisTree::Configuration(GetName());
+    for (auto &branch_item : branches_out_) {
+      out_config_->AddBranchConfig(branch_item.second->GetConfig());
+    }
+    out_config_->Print();
+    if (out_file_) {
+      auto cwd = gDirectory;
+      out_file_->cd();
+      out_config_->Write("Configuration", TObject::kOverwrite);
+      cwd->cd();
+    }
+  } else {
+    std::cout << "ATI2_Finish: out_config_ is NULL, so no output config is going to be produced..." << std::endl;
+    std::cout << "ATI2_Finish: Ignore this message if you don't expect any AT output" << std::endl;
   }
-  out_config_->Print();
-  auto cwd = gDirectory;
-  out_file_->cd();
-  out_config_->Write("Configuration", TObject::kOverwrite);
-  cwd->cd();
 }
 std::pair<std::string, std::string> UserFillTask::ParseVarName(const std::string &variable_name) {
   const std::regex re_vname("^(\\w+)/(\\w+)$");
