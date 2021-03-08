@@ -86,6 +86,9 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
     throw std::runtime_error("Field name cannot be empty");
   if (type == AnalysisTree::Types::kNumberOfTypes)
     throw std::runtime_error("Type of the field cannot be kNumberOfTypes");
+  if (HasField(field_name)) {
+    throw std::runtime_error("Field of name '" + field_name + "' already exists in the config");
+  }
 
   CheckFrozen(false);
   CheckMutable(true);
