@@ -61,7 +61,8 @@ public:
     processed_tracks_branch->CloneVariables(vtx_tracks_branch->GetConfig());
 
     /* We will take dcax/y from VtxTracks */
-    processed_tracks_dcax = processed_tracks_branch->NewVariable("dcax", FLOAT);
+//    processed_tracks_dcax = processed_tracks_branch->NewVariable("dcax", FLOAT);
+//    error: already exists
     processed_tracks_vtxx = processed_tracks_branch->NewVariable("vtx_x", FLOAT);
 
     NewBranch("test_event_header", EVENT_HEADER);
@@ -106,9 +107,9 @@ public:
 //      std::cout << vtx_track[vtxtracks_dca_x].GetVal() << "\t"
 //                << processed_track[processed_tracks_dcax].GetVal() << std::endl;
 //      rec_event_header_vtx_x.Print();
-//      processed_tracks_vtxx.Print();
-//      std::cout << (*rec_event_header)[rec_event_header_vtx_x].GetVal() << "\t"
-//                << processed_track[processed_tracks_vtxx].GetVal() << std::endl;
+      processed_tracks_vtxx.Print();
+      std::cout << (*rec_event_header)[rec_event_header_vtx_x].GetVal() << "\t"
+                << processed_track[processed_tracks_vtxx].GetVal() << std::endl;
 
     }
 

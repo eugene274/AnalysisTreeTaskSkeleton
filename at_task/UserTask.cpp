@@ -74,6 +74,10 @@ void UserFillTask::ATI2_Finish() {
     *out_config_ = AnalysisTree::Configuration(GetName());
     for (auto &branch_item : branches_out_) {
       out_config_->AddBranchConfig(branch_item.second->GetConfig());
+      // overriding id with hash
+      // see: https://github.com/HeavyIonAnalysis/AnalysisTree/issues/57
+      auto &config = out_config_->GetBranchConfig(branch_item.first);
+      config.SetId(branch_item.second->Hash());
     }
     out_config_->Print();
     if (out_file_) {

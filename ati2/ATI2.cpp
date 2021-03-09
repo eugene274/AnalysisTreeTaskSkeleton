@@ -48,7 +48,8 @@ void Branch::InitDataPtr() {
   ApplyT([this](auto entity) {
     if (entity)
       throw std::runtime_error("Data ptr is already initialized");
-    this->data = new typename std::remove_pointer<decltype(entity)>::type;
+    auto entity_id = Hash();
+    this->data = new typename std::remove_pointer<decltype(entity)>::type(entity_id);
   });
 }
 

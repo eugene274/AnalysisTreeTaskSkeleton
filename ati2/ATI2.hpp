@@ -174,6 +174,7 @@ struct Branch {
   void *data{nullptr}; /// owns object
   bool is_mutable{false};
   bool is_frozen{false};
+
  public:
   AnalysisTree::Configuration *parent_config{nullptr};
   bool is_connected_to_input{false};
@@ -297,7 +298,12 @@ struct Branch {
     assert(false);
   }
 
+  AnalysisTree::ShortInt_t Hash() const {
+    const auto hasher = std::hash<std::string>();
+    return AnalysisTree::ShortInt_t(hasher(config.GetName()));
+  }
  private:
+
   template<size_t ... Idx>
   auto GetVarsImpl(std::array<std::string, sizeof ... (Idx)> && field_names, std::index_sequence<Idx...>) {
     return std::make_tuple(GetFieldVar(field_names[Idx])...);
