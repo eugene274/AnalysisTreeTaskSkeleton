@@ -106,6 +106,11 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
     assert(false);
   }
 
+  /* Init EventHeader */
+  if (AnalysisTree::DetType::kEventHeader == config.GetType()) {
+    ((AnalysisTree::EventHeader *) data)->Init(config);
+  }
+
   ATI2::Variable v;
   v.name = config.GetName() + "/" + field_name;
   v.field_name = field_name;
