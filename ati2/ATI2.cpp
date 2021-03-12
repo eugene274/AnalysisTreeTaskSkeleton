@@ -24,8 +24,20 @@ inline void hash_combine(std::size_t& seed, const T& v, Rest... rest) {
 }
 
 std::size_t BranchConfigHasher(const AnalysisTree::BranchConfig& config) {
+  using Type = AnalysisTree::Types;
+
   std::size_t hash = 0;
   hash_combine(hash, config.GetType());
+
+  auto hash_fields = [&hash] (const std::map<std::string, Short_t>& fields_map, Type field_type) {
+    for (auto &field : fields_map) {
+      hash_combine(hash, field.first, field.second, field_type);
+    }
+  };
+
+  hash_fields(config.GetMap<float>(), Type::kFloat);
+  hash_fields(config.GetMap<int>(), Type::kInteger);
+  hash_fields(config.GetMap<bool>(), Type::kBool);
   return hash;
 }
 
