@@ -192,6 +192,24 @@ void Branch::CopyContents(Branch *other) {
   }
 
 }
+void Branch::CopyContentsRaw(Branch *other) {
+  if (this == other) {
+    throw std::runtime_error("Copying contents from the same branch makes no sense");
+  }
+  CheckMutable();
+  CheckFrozen();
+
+  /* Minimal possible check */
+  if (config.GetType() != other->config.GetType()) {
+    throw std::runtime_error("Branch types must be the same");
+  }
+  auto src_data_ptr = other->data;
+  ApplyT([src_data_ptr] (auto dst_data_ptr) {
+    auto typed_src_data_ptr = reinterpret_cast<decltype(dst_data_ptr)>(src_data_ptr);
+    *dst_data_ptr = *typed_src_data_ptr;
+  });
+
+}
 void Branch::CreateMapping(Branch *other) {
   if (copy_fields_mapping.find(other) != copy_fields_mapping.end()) {
     // TODO Warning

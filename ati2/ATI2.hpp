@@ -252,6 +252,13 @@ struct Branch {
   void CloneVariables(const AnalysisTree::BranchConfig& other);
   void CopyContents(Branch *br);
 
+  /**
+   * @brief Copies contents from other branch 'as-is'. Faster than CopyContents() since it creates no mapping
+   * Use with caution, some consistency checks are missing at this point
+   * @param other
+   */
+  void CopyContentsRaw(Branch *other);
+
   void CreateMapping(Branch *other);;
 
   template<typename EntityPtr>
