@@ -4,7 +4,7 @@ project(ATTaskSkeleton)
 set(CMAKE_CXX_STANDARD 17)
 
 set(AnalysisTree_BUILD_TYPE RELEASE CACHE STRING "Build type of the AnalysisTree")
-set(AnalysisTree_GIT_TAG v1.0.6 CACHE STRING "Git tag of the AnalysisTree")
+set(AnalysisTree_GIT_TAG v1.0.7 CACHE STRING "Git tag of the AnalysisTree")
 
 set(ATTaskSkeleton_BUILD_SAMPLE OFF CACHE BOOL "Build sample task")
 
