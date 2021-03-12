@@ -62,18 +62,41 @@ void UserFillTask::ATI2_Load(std::map<std::string, void *> &map) {
 
 }
 
-ATI2::Variable UserFillTask::GetVar(const std::string &name) const {
-  assert(UseATI2());
-  auto &&[br_name, f_name] = ParseVarName(name);
-  return GetInBranch(br_name)->GetFieldVar(f_name);
+void UserFillTask::ATI2_InitBranchesBypass() {
+  if (enable_bypass) {
+    for (auto &in_branch : branches_in_) {
+      auto& in_branch_name = in_branch.first;
+      /* if already found in branches_out, skipping */
+      if (branches_out_.find(in_branch_name) != branches_out_.end()) {
+        continue;
+      }
+
+      auto src_branch = in_branch.second.get();
+      auto tgt_branch = NewBranch(in_branch_name, src_branch->GetConfig());
+      tgt_branch->Freeze();
+      std::cout << "Bypassing branch: " << in_branch_name << std::endl;
+      branches_bypass_.emplace_back(std::make_pair(src_branch, tgt_branch));
+    }
+  }
 }
 
+void UserFillTask::ATI2_ExecBypass() {
+  for (auto &bypass_pair : branches_bypass_) {
+    auto &src = bypass_pair.first;
+    auto &dst = bypass_pair.second;
+    dst->CopyContentsRaw(src);
+  }
+}
 void UserFillTask::ATI2_Finish() {
   assert(UseATI2());
   if (out_config_) {
     *out_config_ = AnalysisTree::Configuration(GetName());
     for (auto &branch_item : branches_out_) {
       out_config_->AddBranchConfig(branch_item.second->GetConfig());
+      // overriding id with hash
+      // see: https://github.com/HeavyIonAnalysis/AnalysisTree/issues/57
+      auto &config = out_config_->GetBranchConfig(branch_item.first);
+      config.SetId(branch_item.second->Hash());
     }
     out_config_->Print();
     if (out_file_) {
@@ -86,6 +109,11 @@ void UserFillTask::ATI2_Finish() {
     std::cout << "ATI2_Finish: out_config_ is NULL, so no output config is going to be produced..." << std::endl;
     std::cout << "ATI2_Finish: Ignore this message if you don't expect any AT output" << std::endl;
   }
+}
+ATI2::Variable UserFillTask::GetVar(const std::string &name) const {
+  assert(UseATI2());
+  auto &&[br_name, f_name] = ParseVarName(name);
+  return GetInBranch(br_name)->GetFieldVar(f_name);
 }
 std::pair<std::string, std::string> UserFillTask::ParseVarName(const std::string &variable_name) {
   const std::regex re_vname("^(\\w+)/(\\w+)$");

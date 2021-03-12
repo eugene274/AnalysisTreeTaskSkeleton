@@ -48,7 +48,8 @@ void Branch::InitDataPtr() {
   ApplyT([this](auto entity) {
     if (entity)
       throw std::runtime_error("Data ptr is already initialized");
-    this->data = new typename std::remove_pointer<decltype(entity)>::type;
+    auto entity_id = Hash();
+    this->data = new typename std::remove_pointer<decltype(entity)>::type(entity_id);
   });
 }
 
@@ -189,6 +190,24 @@ void Branch::CopyContents(Branch *other) {
   for (auto &field_pair /* src : dst */: mapping.field_pairs) {
     this->Value(field_pair.second) = src_branch->Value(field_pair.first);
   }
+
+}
+void Branch::CopyContentsRaw(Branch *other) {
+  if (this == other) {
+    throw std::runtime_error("Copying contents from the same branch makes no sense");
+  }
+  CheckMutable();
+  CheckFrozen();
+
+  /* Minimal possible check */
+  if (config.GetType() != other->config.GetType()) {
+    throw std::runtime_error("Branch types must be the same");
+  }
+  auto src_data_ptr = other->data;
+  ApplyT([src_data_ptr] (auto dst_data_ptr) {
+    auto typed_src_data_ptr = reinterpret_cast<decltype(dst_data_ptr)>(src_data_ptr);
+    *dst_data_ptr = *typed_src_data_ptr;
+  });
 
 }
 void Branch::CreateMapping(Branch *other) {
