@@ -11,6 +11,37 @@
 
 using namespace ATI2;
 
+namespace Impl {
+
+inline void hash_combine(std::size_t &seed) {}
+
+template<typename T, typename... Rest>
+inline void hash_combine(std::size_t &seed, const T &v, Rest... rest) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  hash_combine(seed, rest...);
+}
+
+std::size_t BranchConfigHasher(const AnalysisTree::BranchConfig &config) {
+  using Type = AnalysisTree::Types;
+
+  std::size_t hash = 0;
+  hash_combine(hash, config.GetType());
+
+  auto hash_fields = [&hash](const std::map<std::string, Short_t> &fields_map, Type field_type) {
+    for (auto &field : fields_map) {
+      hash_combine(hash, field.first, field.second, field_type);
+    }
+  };
+
+  hash_fields(config.GetMap<float>(), Type::kFloat);
+  hash_fields(config.GetMap<int>(), Type::kInteger);
+  hash_fields(config.GetMap<bool>(), Type::kBool);
+  return hash;
+}
+
+}
+
 void BranchChannel::Print(std::ostream &os) const {
   os << "Branch " << branch->GetBranchName() << " channel #" << i_channel << std::endl;
 }
@@ -29,8 +60,8 @@ Variable Branch::GetFieldVar(const std::string &field_name) {
 }
 
 Branch::~Branch() {
-  ApplyT([this] (auto entry_ptr) {
-      delete entry_ptr;
+  ApplyT([this](auto entry_ptr) {
+    delete entry_ptr;
   });
 }
 
@@ -107,6 +138,8 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
     assert(false);
   }
 
+  UpdateConfigHash();
+
   /* Init EventHeader */
   if (AnalysisTree::DetType::kEventHeader == config.GetType()) {
     ((AnalysisTree::EventHeader *) data)->Init(config);
@@ -122,10 +155,10 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
 }
 
 void Branch::CloneVariables(const AnalysisTree::BranchConfig &other) {
-  auto import_fields_from_map = [this] (const std::map<std::string, short> &map, AnalysisTree::Types type) {
+  auto import_fields_from_map = [this](const std::map<std::string, short> &map, AnalysisTree::Types type) {
     for (auto &element : map) {
       auto field_name = element.first;
-      if (this->HasField(field_name)) {
+      if (HasField(field_name)) {
         std::cout << "Field '" << field_name << "' already exists" << std::endl;
         continue;
       }
@@ -140,7 +173,7 @@ void Branch::CloneVariables(const AnalysisTree::BranchConfig &other) {
 
 void Branch::ClearChannels() {
   CheckMutable();
-  ApplyT([this](auto entity_ptr) -> void {
+  ApplyT([](auto entity_ptr) -> void {
     if constexpr (is_event_header_v < decltype(entity_ptr) >) {
       throw std::runtime_error("Not applicable for EventHeader");
     } else {
@@ -149,15 +182,19 @@ void Branch::ClearChannels() {
   });
 }
 bool Branch::HasField(const std::string &field_name) const {
-  auto field_id = config.GetFieldId(field_name);
-  return field_id != AnalysisTree::UndefValueShort;
+  auto has_field = [&field_name](const std::map<std::string, Short_t> &map) {
+    return map.find(field_name) != map.end();
+  };
+  return has_field(config.GetMap<float>()) ||
+      has_field(config.GetMap<int>()) ||
+      has_field(config.GetMap<bool>());
 }
 std::vector<std::string> Branch::GetFieldNames() const {
   std::vector<std::string> result;
-  auto fill_vector_from_map = [&result] (const std::map<std::string, short> &fields_map) -> void {
+  auto fill_vector_from_map = [&result](const std::map<std::string, short> &fields_map) -> void {
     for (auto &element : fields_map) {
       result.push_back(element.first);
-     }
+    }
   };
   fill_vector_from_map(config.GetMap<float>());
   fill_vector_from_map(config.GetMap<int>());
@@ -185,7 +222,7 @@ void Branch::CopyContents(Branch *other) {
 
   /* evaluate mapping */
   auto src_branch = mapping_it->first;
-  const auto& mapping = mapping_it->second;
+  const auto &mapping = mapping_it->second;
 
   for (auto &field_pair /* src : dst */: mapping.field_pairs) {
     this->Value(field_pair.second) = src_branch->Value(field_pair.first);
@@ -199,12 +236,11 @@ void Branch::CopyContentsRaw(Branch *other) {
   CheckMutable();
   CheckFrozen();
 
-  /* Minimal possible check */
-  if (config.GetType() != other->config.GetType()) {
-    throw std::runtime_error("Branch types must be the same");
+  if (config_hash != other->config_hash) {
+    throw std::runtime_error("Branch configurations are not consistent.");
   }
   auto src_data_ptr = other->data;
-  ApplyT([src_data_ptr] (auto dst_data_ptr) {
+  ApplyT([src_data_ptr](auto dst_data_ptr) {
     auto typed_src_data_ptr = reinterpret_cast<decltype(dst_data_ptr)>(src_data_ptr);
     *dst_data_ptr = *typed_src_data_ptr;
   });
@@ -240,6 +276,9 @@ void Branch::UseFields(std::vector<std::pair<std::string, std::reference_wrapper
   for (auto &element : vars) {
     element.second.get() = GetFieldVar(element.first);
   }
+}
+void Branch::UpdateConfigHash() {
+  config_hash = Impl::BranchConfigHasher(config);
 }
 
 void BranchChannel::UpdateChannel(size_t new_channel) {
@@ -346,7 +385,7 @@ ValueType ReadValue(const Variable &v, const Entity *e) {
     return (ValueType) e->template GetField<int>(v.GetId());
   } else if (v.GetFieldType() == Types::kBool) {
     return (ValueType) e->template GetField<bool>(v.GetId());
-  } else if (v.GetFieldType() == Types::kNumberOfTypes){
+  } else if (v.GetFieldType() == Types::kNumberOfTypes) {
     /* Types::kNumberOfTypes */
     assert(false);
   }

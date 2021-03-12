@@ -174,6 +174,7 @@ struct Branch {
   void *data{nullptr}; /// owns object
   bool is_mutable{false};
   bool is_frozen{false};
+  std::size_t config_hash{0};
 
  public:
   AnalysisTree::Configuration *parent_config{nullptr};
@@ -185,8 +186,11 @@ struct Branch {
   /* c-tors */
   explicit Branch(AnalysisTree::BranchConfig config) : config(std::move(config)) {
     InitDataPtr();
+    UpdateConfigHash();
   }
-  Branch(AnalysisTree::BranchConfig config, void *data) : config(std::move(config)), data(data) {}
+  Branch(AnalysisTree::BranchConfig config, void *data) : config(std::move(config)), data(data) {
+    UpdateConfigHash();
+  }
 
   /* Accessors to branch' main parameters, used very often */
   inline auto GetBranchName() const { return config.GetName(); }
@@ -254,12 +258,13 @@ struct Branch {
 
   /**
    * @brief Copies contents from other branch 'as-is'. Faster than CopyContents() since it creates no mapping
-   * Use with caution, some consistency checks are missing at this point
    * @param other
    */
   void CopyContentsRaw(Branch *other);
 
-  void CreateMapping(Branch *other);;
+  void CreateMapping(Branch *other);
+
+  void UpdateConfigHash();
 
   template<typename EntityPtr>
   constexpr static const bool is_event_header_v =
