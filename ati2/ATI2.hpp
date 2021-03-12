@@ -258,7 +258,6 @@ struct Branch {
 
   /**
    * @brief Copies contents from other branch 'as-is'. Faster than CopyContents() since it creates no mapping
-   * Use with caution, some consistency checks are missing at this point
    * @param other
    */
   void CopyContentsRaw(Branch *other);
