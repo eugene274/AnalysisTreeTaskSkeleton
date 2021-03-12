@@ -11,6 +11,26 @@
 
 using namespace ATI2;
 
+
+namespace Impl {
+
+inline void hash_combine(std::size_t& seed) { }
+
+template <typename T, typename... Rest>
+inline void hash_combine(std::size_t& seed, const T& v, Rest... rest) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+  hash_combine(seed, rest...);
+}
+
+std::size_t BranchConfigHasher(const AnalysisTree::BranchConfig& config) {
+  std::size_t hash = 0;
+  hash_combine(hash, config.GetType());
+  return hash;
+}
+
+}
+
 void BranchChannel::Print(std::ostream &os) const {
   os << "Branch " << branch->GetBranchName() << " channel #" << i_channel << std::endl;
 }
@@ -107,6 +127,8 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
     assert(false);
   }
 
+  UpdateConfigHash();
+
   /* Init EventHeader */
   if (AnalysisTree::DetType::kEventHeader == config.GetType()) {
     ((AnalysisTree::EventHeader *) data)->Init(config);
@@ -200,8 +222,8 @@ void Branch::CopyContentsRaw(Branch *other) {
   CheckFrozen();
 
   /* Minimal possible check */
-  if (config.GetType() != other->config.GetType()) {
-    throw std::runtime_error("Branch types must be the same");
+  if (config_hash != other->config_hash) {
+    throw std::runtime_error("Branch configurations are not consistent.");
   }
   auto src_data_ptr = other->data;
   ApplyT([src_data_ptr] (auto dst_data_ptr) {
@@ -240,6 +262,9 @@ void Branch::UseFields(std::vector<std::pair<std::string, std::reference_wrapper
   for (auto &element : vars) {
     element.second.get() = GetFieldVar(element.first);
   }
+}
+void Branch::UpdateConfigHash() {
+  config_hash = Impl::BranchConfigHasher(config);
 }
 
 void BranchChannel::UpdateChannel(size_t new_channel) {
