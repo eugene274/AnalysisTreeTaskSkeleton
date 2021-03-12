@@ -12,17 +12,17 @@
 
 using namespace ATI2;
 
-ATI2::Branch *UserFillTask::NewBranch(const std::string &branch_name,
-                                      AnalysisTree::DetType detector_type) {
+ATI2::Branch *UserFillTask::NewBranch(const AnalysisTree::BranchConfig &config) {
   assert(UseATI2());
+
+  auto branch_name = config.GetName();
+
   if (branches_out_.find(branch_name) != branches_out_.end())
     throw std::runtime_error("Branch of that name already exists");
   if (branch_name.empty())
     throw std::runtime_error("Branch name cannot be empty");
-  AnalysisTree::BranchConfig branch_config(branch_name, detector_type);
+  auto branch_ptr = std::make_unique<Branch>(config);
 
-
-  auto branch_ptr = std::make_unique<Branch>(branch_config);
   branch_ptr->parent_config = out_config_;
   if (out_tree_) {
     branch_ptr->ConnectOutputTree(out_tree_);
@@ -31,6 +31,11 @@ ATI2::Branch *UserFillTask::NewBranch(const std::string &branch_name,
   branches_out_.emplace(branch_name, std::move(branch_ptr));
   return branches_out_.find(branch_name)->second.get();
 }
+ATI2::Branch *UserFillTask::NewBranch(const std::string &branch_name,
+                                      AnalysisTree::DetType detector_type) {
+  return NewBranch(AnalysisTree::BranchConfig(branch_name, detector_type));
+}
+
 ATI2::Branch *UserFillTask::NewBranch(const std::string &branch_name, const AnalysisTree::BranchConfig &config) {
   assert(UseATI2());
 
@@ -72,14 +77,13 @@ void UserFillTask::ATI2_InitBranchesBypass() {
       }
 
       auto src_branch = in_branch.second.get();
-      auto tgt_branch = NewBranch(in_branch_name, src_branch->GetConfig());
+      auto tgt_branch = NewBranch(src_branch->GetConfig());
       tgt_branch->Freeze();
       std::cout << "Bypassing branch: " << in_branch_name << std::endl;
       branches_bypass_.emplace_back(std::make_pair(src_branch, tgt_branch));
     }
   }
 }
-
 void UserFillTask::ATI2_ExecBypass() {
   for (auto &bypass_pair : branches_bypass_) {
     auto &src = bypass_pair.first;
@@ -124,3 +128,4 @@ std::pair<std::string, std::string> UserFillTask::ParseVarName(const std::string
   }
   throw std::runtime_error("Invalid format for variable name");
 }
+

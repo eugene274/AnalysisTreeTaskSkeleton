@@ -76,8 +76,11 @@ class UserFillTask : public UserTask, public AnalysisTree::FillTask {
   virtual void UserInit(std::map<std::string, void *> &map) {};
   virtual void UserExec() {};
   virtual void UserFinish() {};
+
+
+  ATI2::Branch *NewBranch(const AnalysisTree::BranchConfig& config);;
   /**
-   * @brief This function creates new branch in the out_config_
+   * @brief This function creates new empty branch in the out_config_
    * @param branch_name
    * @param detector_type
    * @return
