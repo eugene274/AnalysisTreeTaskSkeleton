@@ -1,10 +1,10 @@
 # AnalysisTreeTaskSkeleton
 
 ### Stable version
-0.7.0
+0.0.6
 
 ### Bleeding edge version
-0.6.0
+0.7.0
 
 
 ### Examples
