@@ -4,8 +4,8 @@
 
 
 #include "ValueHolder.hpp"
-#include "Branch.hpp"
 #include "BranchChannel.hpp"
+#include "Branch.hpp"
 
 #include "ATI2_ATHelper.hpp"
 
@@ -128,6 +128,10 @@ void ValueHolder::SetVal(bool val) const {
 }
 
 ValueHolder &ValueHolder::operator=(const ValueHolder &other) {
+  if (this == &other) {
+    return *this;
+  }
+
   v.GetParentBranch()->CheckMutable(true);
 
   using AnalysisTree::Types;
