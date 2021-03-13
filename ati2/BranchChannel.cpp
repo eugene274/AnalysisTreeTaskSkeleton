@@ -63,7 +63,7 @@ void BranchChannel::CopyContents(Branch &other) {
 
 }
 
-BranchChannel::BranchChannel(Branch *branch, size_t i_channel) : branch(branch), i_channel(i_channel) {
+BranchChannel::BranchChannel(Branch *branch, std::size_t i_channel) : branch(branch), i_channel(i_channel) {
   UpdatePointer();
 }
 

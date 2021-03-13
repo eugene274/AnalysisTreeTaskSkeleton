@@ -8,7 +8,6 @@
 #include "ATI2_fwd.hpp"
 #include "ValueHolder.hpp"
 
-#include <cstddef>
 #include <iostream>
 
 
@@ -22,7 +21,7 @@ class BranchChannel {
     return ValueHolder(v, data_ptr);
   }
   inline ValueHolder operator[](const Variable &v) const { return Value(v); };
-  inline size_t GetNChannel() const { return i_channel; }
+  inline std::size_t GetNChannel() const { return i_channel; }
 
   /* usage of this functions is highly discouraged */
   void *Data() { return data_ptr; }
@@ -46,13 +45,13 @@ class BranchChannel {
   friend Branch;
   friend BranchChannelsIter;
 
-  BranchChannel(Branch *branch, size_t i_channel);
+  BranchChannel(Branch *branch, std::size_t i_channel);
   void UpdatePointer();
-  void UpdateChannel(size_t new_channel);
+  void UpdateChannel(std::size_t new_channel);
 
   void *data_ptr{nullptr};
   Branch *branch;
-  size_t i_channel;
+  std::size_t i_channel;
 };
 
 
