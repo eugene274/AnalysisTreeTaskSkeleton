@@ -8,6 +8,7 @@
 
 #include "ATI2_fwd.hpp"
 #include "Variable.hpp"
+#include <type_traits>
 
 namespace ATI2 {
 
@@ -22,9 +23,21 @@ class ValueHolder {
 
   operator float() const;
 
-  template<typename T>
-  ValueHolder &operator=(T new_val) {
-    SetVal(new_val);
+  template<typename ValueType>
+  typename std::enable_if<std::is_floating_point<ValueType>::value, ValueHolder&>::type
+  operator=(ValueType new_val) {
+    SetVal(float(new_val));
+    return *this;
+  }
+  template<typename ValueType>
+  typename std::enable_if<std::is_integral<ValueType>::value, ValueHolder&>::type
+  operator=(ValueType new_val) {
+    SetVal(int(new_val));
+    return *this;
+  }
+  inline
+  ValueHolder &operator=(bool new_val) {
+    SetVal(bool(new_val));
     return *this;
   }
   ValueHolder &operator=(const ValueHolder &other);

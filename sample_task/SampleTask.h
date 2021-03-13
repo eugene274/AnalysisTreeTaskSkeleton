@@ -59,6 +59,7 @@ public:
 
     processed_tracks_branch = NewBranch("ProcessedTracks", PARTICLES);
     processed_tracks_branch->CloneVariables(vtx_tracks_branch->GetConfig());
+    processed_tracks_branch->UseFields({{"dcax", processed_tracks_dcax}});
 
     /* We will take dcax/y from VtxTracks */
 //    processed_tracks_dcax = processed_tracks_branch->NewVariable("dcax", FLOAT);
@@ -101,6 +102,10 @@ public:
       auto processed_track = processed_tracks_branch->NewChannel();
       processed_track.CopyContents(vtx_track);
       processed_track.CopyContents(*rec_event_header);
+
+      processed_track[processed_tracks_dcax] = true;
+      processed_track[processed_tracks_dcax] = 0.0;
+      processed_track[processed_tracks_dcax] = 1;
 
 //      std::cout << "Current size " << processed_tracks_branch->size() << std::endl;
 //      vtxtracks_dca_x.Print();
