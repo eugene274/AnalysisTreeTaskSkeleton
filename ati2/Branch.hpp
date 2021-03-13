@@ -13,6 +13,10 @@
 #include <map>
 #include <vector>
 
+#include "BranchChannel.hpp"
+
+class TTree;
+
 namespace ATI2 {
 
 

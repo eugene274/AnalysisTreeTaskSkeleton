@@ -2,12 +2,20 @@
 // Created by eugene on 17/02/2021.
 //
 
-#include <iostream>
-
 #include <TTree.h>
 
-#include "ATI2.hpp"
 #include "ATI2_ATHelper.hpp"
+
+#include "Variable.hpp"
+#include "Branch.hpp"
+#include <AnalysisTree/Constants.hpp>
+
+#include <string>
+
+#include <map>
+#include <vector>
+#include <iostream>
+
 
 using namespace ATI2;
 
@@ -42,9 +50,7 @@ std::size_t BranchConfigHasher(const AnalysisTree::BranchConfig &config) {
 
 }
 
-void BranchChannel::Print(std::ostream &os) const {
-  os << "Branch " << branch->GetBranchName() << " channel #" << i_channel << std::endl;
-}
+
 
 Variable Branch::GetFieldVar(const std::string &field_name) {
   ATI2::Variable v;
@@ -94,24 +100,7 @@ size_t ATI2::Branch::size() const {
   });
 }
 
-BranchChannel::BranchChannel(Branch *branch, size_t i_channel) : branch(branch), i_channel(i_channel) {
-  UpdatePointer();
-}
 
-BranchChannel Branch::operator[](size_t i_channel) { return BranchChannel(this, i_channel); }
-BranchChannel Branch::NewChannel() {
-  CheckMutable(true);
-  ApplyT([this](auto entity_ptr) {
-    if constexpr (is_event_header_v < decltype(entity_ptr) >) {
-      throw std::runtime_error("Not applicable for EventHeader");
-    } else {
-      auto channel = entity_ptr->AddChannel();
-      channel->Init(this->config);
-      Freeze();
-    }
-  });
-  return operator[](size() - 1);
-}
 
 Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types type) {
   if (field_name.empty())
@@ -281,61 +270,7 @@ void Branch::UpdateConfigHash() {
   config_hash = Impl::BranchConfigHasher(config);
 }
 
-void BranchChannel::UpdateChannel(size_t new_channel) {
-  i_channel = new_channel;
-  UpdatePointer();
-}
-void BranchChannel::UpdatePointer() {
-  if (i_channel < branch->size()) {
-    data_ptr = branch->ApplyT([this](auto entity_ptr) -> void * {
-      if constexpr (Branch::is_event_header_v<decltype(entity_ptr)>) {
-        throw std::runtime_error("Getting channel of the EventHeader is not implemented");
-      } else {
-        return &(entity_ptr->Channels()->data()[i_channel]);
-      }
-    });
-  } else {
-    data_ptr = nullptr;
-  }
-}
-void BranchChannel::CopyContents(const BranchChannel &other) {
-  branch->CheckMutable();
 
-  auto mapping_it = branch->copy_fields_mapping.find(other.branch);
-  if (mapping_it == branch->copy_fields_mapping.end()) {
-    branch->CreateMapping(other.branch);
-    mapping_it = branch->copy_fields_mapping.find(other.branch);
-  }
-
-  /* Eval mapping */
-  const auto &field_pairs = mapping_it->second.field_pairs;
-
-  for (auto &field_pair /* src : dst */ : field_pairs) {
-    this->Value(field_pair.second) = other.Value(field_pair.first);
-  }
-
-}
-void BranchChannel::CopyContents(Branch &other) {
-  branch->CheckMutable();
-
-  if (other.GetBranchType() != AnalysisTree::DetType::kEventHeader) {
-    throw std::runtime_error("This operation is allowed only between iterable and non-iterable types");
-  }
-
-  auto mapping_it = branch->copy_fields_mapping.find(&other);
-  if (mapping_it == branch->copy_fields_mapping.end()) {
-    branch->CreateMapping(&other);
-    mapping_it = branch->copy_fields_mapping.find(&other);
-  }
-
-  /* Eval mapping */
-  const auto &field_pairs = mapping_it->second.field_pairs;
-
-  for (auto &field_pair /* src : dst */ : field_pairs) {
-    this->Value(field_pair.second) = other.Value(field_pair.first);
-  }
-
-}
 
 BranchChannelsIter &BranchChannelsIter::operator++() {
   i_channel++;
@@ -343,137 +278,8 @@ BranchChannelsIter &BranchChannelsIter::operator++() {
   return *this;
 }
 
-ValueHolder Variable::operator*() const { return parent_branch->Value(*this); }
 
 void Variable::Print(std::ostream &os) const {
   os << name << "(id = " << id << ")" << std::endl;
 }
 
-namespace Impl {
-
-template<typename Entity>
-inline Entity *DataT(void *data_ptr) { return reinterpret_cast<Entity *>(data_ptr); }
-template<typename Entity>
-inline const Entity *DataT(const void *data_ptr) { return reinterpret_cast<const Entity *>(data_ptr); }
-
-template<typename Functor, typename DataPtr>
-auto ApplyToEntity(AnalysisTree::DetType det_type, DataPtr ptr, Functor &&functor) {
-  using AnalysisTree::DetType;
-  if (DetType::kParticle == det_type) {
-    return functor(DataT<AnalysisTree::Particle>(ptr));
-  } else if (DetType::kTrack == det_type) {
-    return functor(DataT<AnalysisTree::Track>(ptr));
-  } else if (DetType::kModule == det_type) {
-    return functor(DataT<AnalysisTree::Module>(ptr));
-  } else if (DetType::kHit == det_type) {
-    return functor(DataT<AnalysisTree::Hit>(ptr));
-  } else if (DetType::kEventHeader == det_type) {
-    return functor(DataT<AnalysisTree::EventHeader>(ptr));
-  }
-  /* unreachable */
-  __builtin_unreachable();
-  assert(false);
-}
-
-template<typename Entity, typename ValueType>
-ValueType ReadValue(const Variable &v, const Entity *e) {
-  using AnalysisTree::Types;
-
-  if (v.GetFieldType() == Types::kFloat) {
-    return (ValueType) e->template GetField<float>(v.GetId());
-  } else if (v.GetFieldType() == Types::kInteger) {
-    return (ValueType) e->template GetField<int>(v.GetId());
-  } else if (v.GetFieldType() == Types::kBool) {
-    return (ValueType) e->template GetField<bool>(v.GetId());
-  } else if (v.GetFieldType() == Types::kNumberOfTypes) {
-    /* Types::kNumberOfTypes */
-    assert(false);
-  }
-  /* unreachable */
-  __builtin_unreachable();
-  assert(false);
-}
-
-template<typename Entity, typename ValueType>
-inline
-void SetValue(const Variable &v, Entity *e, ValueType new_value) {
-  using AnalysisTree::Types;
-
-  if (v.GetFieldType() == Types::kFloat) {
-    ATHelper::SetField(e, v.GetId(), float(new_value));
-    return;
-  } else if (v.GetFieldType() == Types::kInteger) {
-    ATHelper::SetField(e, v.GetId(), int(new_value));
-    return;
-  } else if (v.GetFieldType() == Types::kBool) {
-    ATHelper::SetField(e, v.GetId(), bool(new_value));
-    return;
-  }
-  /* unreachable */
-  __builtin_unreachable();
-  assert(false);
-}
-
-} // namespace Impl
-float ValueHolder::GetVal() const {
-  return Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(),
-                             data_ptr, [this](auto entity_ptr) {
-        using Entity = std::remove_const_t<std::remove_pointer_t<decltype(entity_ptr)>>;
-        return Impl::ReadValue<Entity, float>(this->v, entity_ptr);
-      });
-}
-
-int ValueHolder::GetInt() const {
-  return Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(),
-                             data_ptr, [this](auto entity_ptr) {
-        using Entity = std::remove_const_t<std::remove_pointer_t<decltype(entity_ptr)>>;
-        return Impl::ReadValue<Entity, int>(this->v, entity_ptr);
-      });
-}
-
-bool ValueHolder::GetBool() const {
-  return Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(),
-                             data_ptr, [this](auto entity_ptr) {
-        using Entity = std::remove_const_t<std::remove_pointer_t<decltype(entity_ptr)>>;
-        return Impl::ReadValue<Entity, bool>(this->v, entity_ptr);
-      });
-}
-ValueHolder::operator float() const {
-  return GetVal();
-}
-void ValueHolder::SetVal(float val) const {
-  v.GetParentBranch()->CheckMutable(true);
-  Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(), data_ptr, [this, val](auto entity_ptr) {
-    Impl::SetValue(v, entity_ptr, val);
-  });
-}
-void ValueHolder::SetVal(int val) const {
-  v.GetParentBranch()->CheckMutable(true);
-  Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(), data_ptr, [this, val](auto entity_ptr) {
-    Impl::SetValue(v, entity_ptr, val);
-  });
-}
-void ValueHolder::SetVal(bool val) const {
-  v.GetParentBranch()->CheckMutable(true);
-  Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(), data_ptr, [this, val](auto entity_ptr) {
-    Impl::SetValue(v, entity_ptr, val);
-  });
-}
-
-ValueHolder &ValueHolder::operator=(const ValueHolder &other) {
-  v.GetParentBranch()->CheckMutable(true);
-
-  using AnalysisTree::Types;
-  if (other.v.GetFieldType() == Types::kFloat) {
-    this->SetVal(other.GetVal());
-  } else if (other.v.GetFieldType() == Types::kInteger) {
-    this->SetVal(other.GetInt());
-  } else if (other.v.GetFieldType() == Types::kBool) {
-    this->SetVal(other.GetBool());
-  } else {
-    /* unreachable */
-    assert(false);
-  }
-
-  return *this;
-}

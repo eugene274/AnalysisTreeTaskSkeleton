@@ -6,6 +6,11 @@
 #define ATTASKSKELETON_ATI2_BRANCHCHANNEL_HPP_
 
 #include "ATI2_fwd.hpp"
+#include "ValueHolder.hpp"
+
+#include <cstddef>
+#include <iostream>
+
 
 namespace ATI2 {
 

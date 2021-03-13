@@ -7,6 +7,9 @@
 
 #include <AnalysisTree/EventHeader.hpp>
 #include <AnalysisTree/Track.hpp>
+#include <AnalysisTree/Particle.hpp>
+#include <AnalysisTree/Module.hpp>
+#include <AnalysisTree/Hit.hpp>
 
 namespace ATI2 {
 
