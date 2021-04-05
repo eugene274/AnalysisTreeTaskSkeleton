@@ -1,7 +1,7 @@
 
 find_package(ROOT REQUIRED COMPONENTS Core Tree)
 
-set(ATI2_SOURCES Branch.cpp ValueHolder.cpp BranchChannel.cpp)
+set(ATI2_SOURCES Branch.cpp ValueHolder.cpp BranchChannel.cpp Variable.cpp)
 list(APPEND ATI2_RELEASE_OPTIONS "-O2")
 list(APPEND ATI2_DEBUG_OPTIONS "-Wall" "-g" "-ggdb")
 

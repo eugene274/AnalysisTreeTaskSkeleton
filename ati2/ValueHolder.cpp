@@ -148,5 +148,3 @@ ValueHolder &ValueHolder::operator=(const ValueHolder &other) {
 
   return *this;
 }
-
-ValueHolder Variable::operator*() const { return parent_branch->Value(*this); }

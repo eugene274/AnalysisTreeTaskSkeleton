@@ -281,7 +281,5 @@ BranchChannelsIter &BranchChannelsIter::operator++() {
 }
 
 
-void Variable::Print(std::ostream &os) const {
-  os << name << "(id = " << id << ")" << std::endl;
-}
+
 
