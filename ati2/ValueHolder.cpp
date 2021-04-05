@@ -13,6 +13,7 @@
 #include <AnalysisTree/Track.hpp>
 #include <AnalysisTree/Module.hpp>
 #include <AnalysisTree/Hit.hpp>
+#include <cassert>
 
 using namespace ATI2;
 

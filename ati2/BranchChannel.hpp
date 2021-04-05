@@ -9,6 +9,7 @@
 #include "ValueHolder.hpp"
 
 #include <iostream>
+#include <cassert>
 
 
 namespace ATI2 {

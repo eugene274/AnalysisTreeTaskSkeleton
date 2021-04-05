@@ -15,6 +15,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <cassert>
 
 
 using namespace ATI2;
