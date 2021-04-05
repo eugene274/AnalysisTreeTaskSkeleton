@@ -18,6 +18,7 @@ class BranchChannel {
   /* Getting value */
   inline ValueHolder Value(const Variable &v) const {
     assert(v.GetParentBranch() == branch);
+    assert(v.IsInitialized());
     return ValueHolder(v, data_ptr);
   }
   inline ValueHolder operator[](const Variable &v) const { return Value(v); };

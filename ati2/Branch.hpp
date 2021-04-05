@@ -109,12 +109,13 @@ struct Branch {
    * @brief Initializes ATI2::Variable objects
    * @param vars - vector of pairs with name and reference to the ATI2::Variable object
    */
-  void UseFields(std::vector<std::pair<std::string, std::reference_wrapper<Variable>>> && vars);
+  void UseFields(std::vector<std::pair<std::string, std::reference_wrapper<Variable>>> &&vars, bool ignore_missing = false);
   bool HasField(const std::string &field_name) const;
   std::vector<std::string> GetFieldNames() const;
 
   /* Getting value */
   inline ValueHolder Value(const Variable &v) const {
+    assert(v.IsInitialized());
     assert(v.GetParentBranch() == this);
     if (config.GetType() == AnalysisTree::DetType::kEventHeader) {
       return ValueHolder(v, data);

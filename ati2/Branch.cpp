@@ -263,9 +263,15 @@ void Branch::CreateMapping(Branch *other) {
   }
   copy_fields_mapping.emplace(other, std::move(fields_mapping));
 }
-void Branch::UseFields(std::vector<std::pair<std::string, std::reference_wrapper<Variable>>> &&vars) {
+void Branch::UseFields(std::vector<std::pair<std::string, std::reference_wrapper<Variable>>> &&vars,
+                       bool ignore_missing) {
   for (auto &element : vars) {
-    element.second.get() = GetFieldVar(element.first);
+    auto &field_name = element.first;
+    if (!HasField(field_name) && ignore_missing) {
+      element.second.get() = Variable();
+      continue;
+    }
+    element.second.get() = GetFieldVar(field_name);
   }
 }
 void Branch::UpdateConfigHash() {

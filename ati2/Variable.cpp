@@ -8,8 +8,15 @@
 
 using namespace ATI2;
 
-ValueHolder Variable::operator*() const { return parent_branch->Value(*this); }
+ValueHolder Variable::operator*() const {
+  assert(IsInitialized());
+  return parent_branch->Value(*this);
+}
 
 void Variable::Print(std::ostream &os) const {
-  os << name << "(id = " << id << ")" << std::endl;
+  if (IsInitialized()) {
+    os << name << "(id = " << id << ")" << std::endl;
+  } else {
+    os << "Variable not initialized!!!" << std::endl;
+  }
 }
