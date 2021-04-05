@@ -33,12 +33,19 @@ class Variable {
   const std::string &GetFieldName() const {
     return field_name;
   }
+  bool IsInitialized() const {
+    return is_initialized;
+  }
+  explicit operator bool() const {
+    return IsInitialized();
+  }
  private:
 //  Variable() = default;
   friend Branch;
 
   Branch *parent_branch{nullptr};
 
+  bool is_initialized{false};
   int id{0};
   AnalysisTree::Types field_type{AnalysisTree::Types::kNumberOfTypes};
   std::string name;

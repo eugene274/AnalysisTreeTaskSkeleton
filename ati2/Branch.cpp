@@ -59,6 +59,7 @@ Variable Branch::GetFieldVar(const std::string &field_name) {
   v.name = this->config.GetName() + "/" + field_name;
   v.field_name = field_name;
   v.field_type = config.GetFieldType(field_name);
+  v.is_initialized = true;
 
   if (v.id == AnalysisTree::UndefValueShort)
     throw std::runtime_error("Field of name '" + v.name + "' not found");
@@ -140,6 +141,7 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
   v.parent_branch = this;
   v.id = config.GetFieldId(field_name);
   v.field_type = config.GetFieldType(field_name);
+  v.is_initialized = true;
   return v;
 }
 
