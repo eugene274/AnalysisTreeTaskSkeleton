@@ -4,7 +4,7 @@
 0.0.6
 
 ### Bleeding edge version
-0.9.0
+0.9.1
 
 
 ### Examples
