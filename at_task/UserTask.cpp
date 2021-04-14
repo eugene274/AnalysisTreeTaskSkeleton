@@ -53,7 +53,7 @@ void UserFillTask::ATI2_Load(std::map<std::string, void *> &map) {
     auto data_ptr_it = map.find(branch_name);
     if (data_ptr_it == map.end()) {
       std::cout << "Branch config with name " << branch_name
-        << "has no corresponding pointer in the map";
+        << "has no corresponding pointer in the map" << std::endl;
       continue;
     }
 
