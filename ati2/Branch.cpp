@@ -73,24 +73,7 @@ Branch::~Branch() {
   });
 }
 
-void Branch::ConnectOutputTree(TTree *tree) {
-  is_connected_to_output = ApplyT([this, tree](auto entity) -> bool {
-    if (!tree)
-      return false;
-    auto new_tree_branch_ptr = tree->Branch(config.GetName().c_str(),
-                                            std::add_pointer_t<decltype(entity)>(&this->data));
-    return bool(new_tree_branch_ptr);
-  });
-}
 
-void Branch::InitDataPtr() {
-  ApplyT([this](auto entity) {
-    if (entity)
-      throw std::runtime_error("Data ptr is already initialized");
-    auto entity_id = Hash();
-    this->data = new typename std::remove_pointer<decltype(entity)>::type(entity_id);
-  });
-}
 
 size_t ATI2::Branch::size() const {
   return ApplyT([](auto entity_ptr) -> size_t {
@@ -279,14 +262,42 @@ void Branch::UpdateConfigHash() {
   config_hash = Impl::BranchConfigHasher(config);
 }
 
-
-
 BranchChannelsIter &BranchChannelsIter::operator++() {
   i_channel++;
   current_channel->UpdateChannel(i_channel);
   return *this;
 }
 
+Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config) {
+  using AnalysisTree::DetType;
+  if (config.GetType() == DetType::kParticle) {
+    return new BranchT<AnalysisTree::Particles>(config);
+  } else if (config.GetType() == DetType::kTrack) {
+    return new BranchT<AnalysisTree::TrackDetector>(config);
+  } else if (config.GetType() == DetType::kModule) {
+    return new BranchT<AnalysisTree::ModuleDetector>(config);
+  } else if (config.GetType() == DetType::kHit) {
+    return new BranchT<AnalysisTree::HitDetector>(config);
+  } else if (config.GetType() == DetType::kEventHeader) {
+    return new BranchT<AnalysisTree::EventHeader>(config);
+  }
+  assert(false);
+}
 
+Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config, void *ptr){
+  using AnalysisTree::DetType;
+  if (config.GetType() == DetType::kParticle) {
+    return new BranchT<AnalysisTree::Particles>(config, (AnalysisTree::Particles*) ptr);
+  } else if (config.GetType() == DetType::kTrack) {
+    return new BranchT<AnalysisTree::TrackDetector>(config, (AnalysisTree::TrackDetector*) ptr);
+  } else if (config.GetType() == DetType::kModule) {
+    return new BranchT<AnalysisTree::ModuleDetector>(config, (AnalysisTree::ModuleDetector*) ptr);
+  } else if (config.GetType() == DetType::kHit) {
+    return new BranchT<AnalysisTree::HitDetector>(config, (AnalysisTree::HitDetector*) ptr);
+  } else if (config.GetType() == DetType::kEventHeader) {
+    return new BranchT<AnalysisTree::EventHeader>(config, (AnalysisTree::EventHeader*) ptr);
+  }
+  assert(false);
+}
 
 

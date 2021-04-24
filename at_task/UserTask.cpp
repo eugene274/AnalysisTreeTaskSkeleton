@@ -21,7 +21,7 @@ ATI2::Branch *UserFillTask::NewBranch(const AnalysisTree::BranchConfig &config) 
     throw std::runtime_error("Branch of that name already exists");
   if (branch_name.empty())
     throw std::runtime_error("Branch name cannot be empty");
-  auto branch_ptr = std::make_unique<Branch>(config);
+  auto branch_ptr = std::unique_ptr<Branch>(Branch::MakeFrom(config));
 
   branch_ptr->parent_config = out_config_;
   if (out_tree_) {
@@ -57,7 +57,7 @@ void UserFillTask::ATI2_Load(std::map<std::string, void *> &map) {
       continue;
     }
 
-    auto branch = std::make_unique<Branch>(config, data_ptr_it->second);
+    auto branch = std::unique_ptr<Branch>(Branch::MakeFrom(config, data_ptr_it->second));
     branch->parent_config = config_;
     branch->is_connected_to_input = true;
     branch->SetMutable(false);

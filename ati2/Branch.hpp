@@ -15,12 +15,11 @@
 #include <cassert>
 
 #include "BranchChannel.hpp"
+#include <TTree.h>
 
 class TTree;
 
 namespace ATI2 {
-
-
 
 struct BranchChannelsIter {
   BranchChannelsIter(Branch *branch, size_t i_channel) :
@@ -63,8 +62,9 @@ struct Branch {
 
   ~Branch();
 
- private:
+ protected:
   AnalysisTree::BranchConfig config;
+ private:
   void *data{nullptr}; /// owns object
   bool is_mutable{false};
   bool is_frozen{false};
@@ -79,10 +79,6 @@ struct Branch {
 
   /* c-tors */
   explicit Branch(AnalysisTree::BranchConfig config) : config(std::move(config)) {
-    InitDataPtr();
-    UpdateConfigHash();
-  }
-  Branch(AnalysisTree::BranchConfig config, void *data) : config(std::move(config)), data(data) {
     UpdateConfigHash();
   }
 
@@ -91,8 +87,8 @@ struct Branch {
   inline auto GetBranchType() const { return config.GetType(); }
   inline const AnalysisTree::BranchConfig &GetConfig() const { return config; }
 
-  void InitDataPtr();
-  void ConnectOutputTree(TTree *tree);
+  virtual void InitDataPtr() = 0;
+  virtual void ConnectOutputTree(TTree *tree) = 0;
 
   Variable GetFieldVar(const std::string &field_name);
   /**
@@ -102,7 +98,8 @@ struct Branch {
    * @param field_name variable names convertible to std::string
    * @return tuple of variables
    */
-  template<typename ... Args> auto GetVars(Args ... field_name) {
+  template<typename ... Args>
+  auto GetVars(Args ... field_name) {
     return GetVarsImpl(std::array<std::string, sizeof...(Args)>{{std::string(field_name)...}},
                        std::make_index_sequence<sizeof...(Args)>());
   }
@@ -110,7 +107,8 @@ struct Branch {
    * @brief Initializes ATI2::Variable objects
    * @param vars - vector of pairs with name and reference to the ATI2::Variable object
    */
-  void UseFields(std::vector<std::pair<std::string, std::reference_wrapper<Variable>>> &&vars, bool ignore_missing = false);
+  void UseFields(std::vector<std::pair<std::string, std::reference_wrapper<Variable>>> &&vars,
+                 bool ignore_missing = false);
   bool HasField(const std::string &field_name) const;
   std::vector<std::string> GetFieldNames() const;
 
@@ -148,7 +146,7 @@ struct Branch {
   BranchChannel NewChannel();
   void ClearChannels();
   Variable NewVariable(const std::string &field_name, AnalysisTree::Types type);
-  void CloneVariables(const AnalysisTree::BranchConfig& other);
+  void CloneVariables(const AnalysisTree::BranchConfig &other);
   void CopyContents(Branch *br);
 
   /**
@@ -212,11 +210,54 @@ struct Branch {
  private:
 
   template<size_t ... Idx>
-  auto GetVarsImpl(std::array<std::string, sizeof ... (Idx)> && field_names, std::index_sequence<Idx...>) {
+  auto GetVarsImpl(std::array<std::string, sizeof ... (Idx)> &&field_names, std::index_sequence<Idx...>) {
     return std::make_tuple(GetFieldVar(field_names[Idx])...);
   }
 
+ public:
+  /* factory functions */
+  static Branch *MakeFrom(const AnalysisTree::BranchConfig &config);
+  static Branch *MakeFrom(const AnalysisTree::BranchConfig &config, void *ptr);
+
 };
+
+template<typename EntityType>
+struct BranchT : public Branch {
+  typedef EntityType entity_type;
+  typedef entity_type *entity_pointer;
+  typedef entity_type &entity_reference;
+  // TODO channel type
+
+
+ private:
+  entity_pointer data_;
+
+  friend Branch * Branch::MakeFrom(const AnalysisTree::BranchConfig &config);
+  friend Branch * Branch::MakeFrom(const AnalysisTree::BranchConfig &config, void *ptr);
+
+  explicit BranchT(const AnalysisTree::BranchConfig& config) : Branch(config) {
+    InitDataPtr();
+  }
+  BranchT(const AnalysisTree::BranchConfig& config, entity_pointer data) : Branch(config), data_(data) {}
+
+ public:
+  void InitDataPtr() final {
+    if (data_) {
+      throw std::runtime_error("Data ptr is already initialized");
+    }
+    auto entity_id = Hash();
+    data_ = new entity_type(entity_id);
+  }
+  void ConnectOutputTree(TTree *tree) final {
+    if (tree) {
+      auto tree_branch = tree->Branch(config.GetName().c_str(), &data_);
+      is_connected_to_output = bool(tree_branch);
+    }
+  }
+
+};
+
+
 
 } // namespace ATI2
 
