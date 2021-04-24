@@ -65,7 +65,6 @@ struct Branch {
  protected:
   AnalysisTree::BranchConfig config;
  private:
-  void *data{nullptr}; /// owns object
   bool is_mutable{false};
   bool is_frozen{false};
   std::size_t config_hash{0};
@@ -125,7 +124,7 @@ struct Branch {
   inline ValueHolder operator[](const Variable &v) const { return Value(v); };
 
   /* iterating */
-  size_t size() const;
+  virtual size_t size() const = 0;
   BranchChannel operator[](size_t i_channel);
   inline BranchChannelsLoop Loop() { return BranchChannelsLoop(this); };
   inline BranchChannelsIter ChannelsBegin() { return BranchChannelsIter(this, 0); };
@@ -144,7 +143,7 @@ struct Branch {
       throw std::runtime_error("Branch is not mutable");
   }
   BranchChannel NewChannel();
-  void ClearChannels();
+  virtual void ClearChannels() = 0;
   Variable NewVariable(const std::string &field_name, AnalysisTree::Types type);
   void CloneVariables(const AnalysisTree::BranchConfig &other);
   void CopyContents(Branch *br);
@@ -163,45 +162,6 @@ struct Branch {
   constexpr static const bool is_event_header_v =
       std::is_same_v<AnalysisTree::EventHeader, std::remove_const_t<std::remove_pointer_t<EntityPtr>>>;
 
-  template<typename Functor>
-  auto ApplyT(Functor &&f) {
-    using AnalysisTree::DetType;
-
-    if (config.GetType() == DetType::kParticle) {
-      return f((AnalysisTree::Particles *) data);
-    } else if (config.GetType() == DetType::kTrack) {
-      return f((AnalysisTree::TrackDetector *) data);
-    } else if (config.GetType() == DetType::kModule) {
-      return f((AnalysisTree::ModuleDetector *) data);
-    } else if (config.GetType() == DetType::kHit) {
-      return f((AnalysisTree::HitDetector *) data);
-    } else if (config.GetType() == DetType::kEventHeader) {
-      return f((AnalysisTree::EventHeader *) data);
-    }
-    /* unreachable */
-    __builtin_unreachable();
-    assert(false);
-  }
-
-  template<typename Functor>
-  auto ApplyT(Functor &&f) const {
-    using AnalysisTree::DetType;
-
-    if (config.GetType() == DetType::kParticle) {
-      return f((const AnalysisTree::Particles *) data);
-    } else if (config.GetType() == DetType::kTrack) {
-      return f((const AnalysisTree::TrackDetector *) data);
-    } else if (config.GetType() == DetType::kModule) {
-      return f((const AnalysisTree::ModuleDetector *) data);
-    } else if (config.GetType() == DetType::kHit) {
-      return f((const AnalysisTree::HitDetector *) data);
-    } else if (config.GetType() == DetType::kEventHeader) {
-      return f((const AnalysisTree::EventHeader *) data);
-    }
-    /* unreachable */
-    __builtin_unreachable();
-    assert(false);
-  }
 
   AnalysisTree::ShortInt_t Hash() const {
     const auto hasher = std::hash<std::string>();
@@ -255,6 +215,30 @@ struct BranchT : public Branch {
     }
   }
 
+  size_t size() const final {
+    return SizeImpl(data_);
+  }
+
+  void ClearChannels() override {
+    CheckMutable();
+    ClearChannelsImpl(data_);
+  }
+
+ private:
+  /* Implementations */
+  template<typename T>
+  static
+  size_t  SizeImpl(const T *entity) { return entity->GetNumberOfChannels(); }
+  static
+  size_t  SizeImpl(const AnalysisTree::EventHeader* /* entity */) { throw std::runtime_error("Size is not implemented for EventHeader branch"); }
+
+
+  template<typename T>
+  static
+  void  ClearChannelsImpl(T* entity) { entity->ClearChannels(); }
+
+  static
+  void  ClearChannelsImpl(AnalysisTree::EventHeader */* entity */) { throw std::runtime_error("ClearChannels is not implemented for EventHeader branch"); }
 };
 
 

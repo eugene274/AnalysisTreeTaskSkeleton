@@ -75,17 +75,6 @@ Branch::~Branch() {
 
 
 
-size_t ATI2::Branch::size() const {
-  return ApplyT([](auto entity_ptr) -> size_t {
-    if constexpr (is_event_header_v < decltype(entity_ptr) >) {
-      throw std::runtime_error("Size is not implemented for EventHeader variable");
-    } else {
-      return entity_ptr->GetNumberOfChannels();
-    }
-  });
-}
-
-
 
 Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types type) {
   if (field_name.empty())
@@ -146,16 +135,7 @@ void Branch::CloneVariables(const AnalysisTree::BranchConfig &other) {
   import_fields_from_map(other.GetMap<bool>(), AnalysisTree::Types::kBool);
 }
 
-void Branch::ClearChannels() {
-  CheckMutable();
-  ApplyT([](auto entity_ptr) -> void {
-    if constexpr (is_event_header_v < decltype(entity_ptr) >) {
-      throw std::runtime_error("Not applicable for EventHeader");
-    } else {
-      entity_ptr->ClearChannels();
-    }
-  });
-}
+
 bool Branch::HasField(const std::string &field_name) const {
   auto has_field = [&field_name](const std::map<std::string, Short_t> &map) {
     return map.find(field_name) != map.end();
@@ -266,6 +246,22 @@ BranchChannelsIter &BranchChannelsIter::operator++() {
   i_channel++;
   current_channel->UpdateChannel(i_channel);
   return *this;
+}
+
+BranchChannel Branch::operator[](size_t i_channel) { return BranchChannel(this, i_channel); }
+
+BranchChannel Branch::NewChannel() {
+  CheckMutable(true);
+  ApplyT([this](auto entity_ptr) {
+    if constexpr (is_event_header_v < decltype(entity_ptr) >) {
+      throw std::runtime_error("Not applicable for EventHeader");
+    } else {
+      auto channel = entity_ptr->AddChannel();
+      channel->Init(this->config);
+      Freeze();
+    }
+  });
+  return operator[](size() - 1);
 }
 
 Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config) {

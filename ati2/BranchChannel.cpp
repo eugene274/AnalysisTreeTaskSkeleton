@@ -67,20 +67,7 @@ BranchChannel::BranchChannel(Branch *branch, std::size_t i_channel) : branch(bra
   UpdatePointer();
 }
 
-BranchChannel Branch::operator[](size_t i_channel) { return BranchChannel(this, i_channel); }
-BranchChannel Branch::NewChannel() {
-  CheckMutable(true);
-  ApplyT([this](auto entity_ptr) {
-    if constexpr (is_event_header_v < decltype(entity_ptr) >) {
-      throw std::runtime_error("Not applicable for EventHeader");
-    } else {
-      auto channel = entity_ptr->AddChannel();
-      channel->Init(this->config);
-      Freeze();
-    }
-  });
-  return operator[](size() - 1);
-}
+
 
 void BranchChannel::Print(std::ostream &os) const {
   os << "Branch " << branch->GetBranchName() << " channel #" << i_channel << std::endl;
