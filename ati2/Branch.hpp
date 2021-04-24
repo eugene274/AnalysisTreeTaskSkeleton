@@ -15,6 +15,7 @@
 #include <cassert>
 
 #include "BranchChannel.hpp"
+#include "EntityWrapper.hpp"
 #include <TTree.h>
 
 class TTree;
@@ -47,6 +48,9 @@ struct BranchChannelsIter {
   size_t i_channel;
 };
 
+
+
+
 struct Branch {
   struct BranchChannelsLoop {
     explicit BranchChannelsLoop(Branch *branch) : branch(branch) {}
@@ -60,14 +64,17 @@ struct Branch {
     std::vector<std::pair<Variable /* src */, Variable /* dst */>> field_pairs;
   };
 
-  ~Branch();
+  virtual ~Branch();;
 
  protected:
   AnalysisTree::BranchConfig config;
+
+
  private:
+  std::size_t config_hash{0};
   bool is_mutable{false};
   bool is_frozen{false};
-  std::size_t config_hash{0};
+
 
  public:
   AnalysisTree::Configuration *parent_config{nullptr};
@@ -77,17 +84,18 @@ struct Branch {
   std::map<const Branch * /* other branch */, FieldsMapping> copy_fields_mapping;
 
   /* c-tors */
-  explicit Branch(AnalysisTree::BranchConfig config) : config(std::move(config)) {
-    UpdateConfigHash();
-  }
+  explicit Branch(AnalysisTree::BranchConfig config);
 
   /* Accessors to branch' main parameters, used very often */
   inline auto GetBranchName() const { return config.GetName(); }
   inline auto GetBranchType() const { return config.GetType(); }
   inline const AnalysisTree::BranchConfig &GetConfig() const { return config; }
+  inline size_t GetConfigHash() const { return config_hash; }
 
   virtual void InitDataPtr() = 0;
   virtual void ConnectOutputTree(TTree *tree) = 0;
+  virtual BaseEntity *GetEntity() const = 0;
+  virtual BaseEntity *GetEntity(size_t channel) const = 0;
 
   Variable GetFieldVar(const std::string &field_name);
   /**
@@ -115,10 +123,7 @@ struct Branch {
   inline ValueHolder Value(const Variable &v) const {
     assert(v.IsInitialized());
     assert(v.GetParentBranch() == this);
-    if (config.GetType() == AnalysisTree::DetType::kEventHeader) {
-      return ValueHolder(v, data);
-    }
-    throw std::runtime_error("Not implemented for iterable branch");
+    return ValueHolder(v, GetEntity());
   }
 
   inline ValueHolder operator[](const Variable &v) const { return Value(v); };
@@ -142,7 +147,7 @@ struct Branch {
     if (is_mutable != expected)
       throw std::runtime_error("Branch is not mutable");
   }
-  BranchChannel NewChannel();
+  virtual BranchChannel NewChannel() = 0;
   virtual void ClearChannels() = 0;
   Variable NewVariable(const std::string &field_name, AnalysisTree::Types type);
   void CloneVariables(const AnalysisTree::BranchConfig &other);
@@ -152,7 +157,7 @@ struct Branch {
    * @brief Copies contents from other branch 'as-is'. Faster than CopyContents() since it creates no mapping
    * @param other
    */
-  void CopyContentsRaw(Branch *other);
+  virtual void CopyContentsRaw(Branch *other) = 0;
 
   void CreateMapping(Branch *other);
 
@@ -161,7 +166,6 @@ struct Branch {
   template<typename EntityPtr>
   constexpr static const bool is_event_header_v =
       std::is_same_v<AnalysisTree::EventHeader, std::remove_const_t<std::remove_pointer_t<EntityPtr>>>;
-
 
   AnalysisTree::ShortInt_t Hash() const {
     const auto hasher = std::hash<std::string>();
@@ -186,19 +190,17 @@ struct BranchT : public Branch {
   typedef EntityType entity_type;
   typedef entity_type *entity_pointer;
   typedef entity_type &entity_reference;
-  // TODO channel type
-
 
  private:
-  entity_pointer data_;
+  entity_pointer data_{nullptr};
 
-  friend Branch * Branch::MakeFrom(const AnalysisTree::BranchConfig &config);
-  friend Branch * Branch::MakeFrom(const AnalysisTree::BranchConfig &config, void *ptr);
+  friend Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config);
+  friend Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config, void *ptr);
 
-  explicit BranchT(const AnalysisTree::BranchConfig& config) : Branch(config) {
+  explicit BranchT(const AnalysisTree::BranchConfig &config) : Branch(config) {
     InitDataPtr();
   }
-  BranchT(const AnalysisTree::BranchConfig& config, entity_pointer data) : Branch(config), data_(data) {}
+  BranchT(const AnalysisTree::BranchConfig &config, entity_pointer data) : Branch(config), data_(data) {}
 
  public:
   void InitDataPtr() final {
@@ -214,34 +216,91 @@ struct BranchT : public Branch {
       is_connected_to_output = bool(tree_branch);
     }
   }
+  BaseEntity *GetEntity() const override {
+    return GetEntityImpl(data_);
+  }
+  BaseEntity *GetEntity(size_t channel) const override {
+    return GetEntityImpl(data_, channel);
+  }
 
   size_t size() const final {
     return SizeImpl(data_);
   }
 
-  void ClearChannels() override {
+  BranchChannel NewChannel() final {
+    CheckMutable(true);
+    AddChannelImpl(data_, config);
+    return operator[](size() - 1);
+  }
+
+  void ClearChannels() final {
     CheckMutable();
     ClearChannelsImpl(data_);
+  }
+
+  void CopyContentsRaw(Branch *other) final {
+    if (this == other) {
+      throw std::runtime_error("Copying contents from the same branch makes no sense");
+    }
+    CheckMutable();
+    CheckFrozen();
+
+    if (GetConfigHash() != other->GetConfigHash()) {
+      throw std::runtime_error("Branch configurations are not consistent.");
+    }
+
+    throw std::runtime_error("Not yet implemented");
   }
 
  private:
   /* Implementations */
   template<typename T>
   static
-  size_t  SizeImpl(const T *entity) { return entity->GetNumberOfChannels(); }
+  size_t SizeImpl(const AnalysisTree::Detector<T> *entity) { return entity->GetNumberOfChannels(); }
   static
-  size_t  SizeImpl(const AnalysisTree::EventHeader* /* entity */) { throw std::runtime_error("Size is not implemented for EventHeader branch"); }
-
+  size_t SizeImpl(const AnalysisTree::EventHeader * /* entity */) {
+    throw std::runtime_error("Size is not implemented for EventHeader branch");
+  }
 
   template<typename T>
   static
-  void  ClearChannelsImpl(T* entity) { entity->ClearChannels(); }
-
+  BaseEntity *GetEntityImpl(AnalysisTree::Detector<T> *entity, size_t channel) {
+    return new EntityT(&entity->GetChannel(channel));
+  }
   static
-  void  ClearChannelsImpl(AnalysisTree::EventHeader */* entity */) { throw std::runtime_error("ClearChannels is not implemented for EventHeader branch"); }
+  BaseEntity *GetEntityImpl(AnalysisTree::EventHeader *entity, size_t channel) {
+    throw std::runtime_error("Getting channel is not implemented for EventHeader branch");
+  }
+
+  template<typename T>
+  static
+  BaseEntity *GetEntityImpl(AnalysisTree::Detector<T> *entity) {
+    throw std::runtime_error("Accessing fields of Detector<T> is not supported");
+  }
+  static
+  BaseEntity *GetEntityImpl(AnalysisTree::EventHeader *entity) {
+    return new EntityT(entity);
+  }
+
+  template<typename T>
+  static
+  void ClearChannelsImpl(AnalysisTree::Detector<T> *entity) { entity->ClearChannels(); }
+  static
+  void ClearChannelsImpl(AnalysisTree::EventHeader */* entity */) {
+    throw std::runtime_error("ClearChannels is not implemented for EventHeader branch");
+  }
+
+  template<typename T>
+  static
+  void AddChannelImpl(AnalysisTree::Detector<T> *entity, const AnalysisTree::BranchConfig &config) {
+    auto channel = entity->AddChannel();
+    channel->Init(config);
+  }
+  static
+  void AddChannelImpl(AnalysisTree::EventHeader * /* entity */, const AnalysisTree::BranchConfig & /* config */) {
+    throw std::runtime_error("Adding channel is not supported for EventHeader branch");
+  }
 };
-
-
 
 } // namespace ATI2
 

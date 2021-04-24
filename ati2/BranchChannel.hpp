@@ -7,6 +7,7 @@
 
 #include "ATI2_fwd.hpp"
 #include "ValueHolder.hpp"
+#include "EntityWrapper.hpp"
 
 #include <iostream>
 #include <cassert>
@@ -16,22 +17,23 @@ namespace ATI2 {
 
 class BranchChannel {
  public:
+  BranchChannel(const BranchChannel& other);
   /* Getting value */
   inline ValueHolder Value(const Variable &v) const {
     assert(v.GetParentBranch() == branch);
     assert(v.IsInitialized());
-    return ValueHolder(v, data_ptr);
+    return ValueHolder(v, entity_.get());
   }
   inline ValueHolder operator[](const Variable &v) const { return Value(v); };
   inline std::size_t GetNChannel() const { return i_channel; }
 
   /* usage of this functions is highly discouraged */
-  void *Data() { return data_ptr; }
-  const void *Data() const { return data_ptr; }
+  void *Data() { return entity_->RawPtr(); }
+  const void *Data() const { return entity_->RawPtr(); }
   template<typename T>
-  T *DataT() { return reinterpret_cast<T *>(data_ptr); }
+  T *DataT() { return reinterpret_cast<T *>(entity_->RawPtr()); }
   template<typename T>
-  const T *DataT() const { return reinterpret_cast<T *>(data_ptr); }
+  const T *DataT() const { return reinterpret_cast<T *>(entity_->RawPtr()); }
 
   /**
    * @brief Copy contents of other branch channel
@@ -48,10 +50,10 @@ class BranchChannel {
   friend BranchChannelsIter;
 
   BranchChannel(Branch *branch, std::size_t i_channel);
-  void UpdatePointer();
+  void UpdateEntity();
   void UpdateChannel(std::size_t new_channel);
 
-  void *data_ptr{nullptr};
+  std::unique_ptr<BaseEntity> entity_{nullptr};
   Branch *branch;
   std::size_t i_channel;
 };

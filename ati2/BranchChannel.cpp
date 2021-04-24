@@ -9,19 +9,13 @@ using namespace ATI2;
 
 void BranchChannel::UpdateChannel(size_t new_channel) {
   i_channel = new_channel;
-  UpdatePointer();
+  UpdateEntity();
 }
-void BranchChannel::UpdatePointer() {
+void BranchChannel::UpdateEntity() {
   if (i_channel < branch->size()) {
-    data_ptr = branch->ApplyT([this](auto entity_ptr) -> void * {
-      if constexpr (Branch::is_event_header_v<decltype(entity_ptr)>) {
-        throw std::runtime_error("Getting channel of the EventHeader is not implemented");
-      } else {
-        return &(entity_ptr->Channels()->data()[i_channel]);
-      }
-    });
+    entity_.reset(branch->GetEntity(i_channel));
   } else {
-    data_ptr = nullptr;
+    entity_.reset();
   }
 }
 void BranchChannel::CopyContents(const BranchChannel &other) {
@@ -64,11 +58,16 @@ void BranchChannel::CopyContents(Branch &other) {
 }
 
 BranchChannel::BranchChannel(Branch *branch, std::size_t i_channel) : branch(branch), i_channel(i_channel) {
-  UpdatePointer();
+  UpdateEntity();
 }
 
 
 
 void BranchChannel::Print(std::ostream &os) const {
   os << "Branch " << branch->GetBranchName() << " channel #" << i_channel << std::endl;
+}
+BranchChannel::BranchChannel(const BranchChannel &other) {
+  branch = other.branch;
+  i_channel = other.i_channel;
+  UpdateEntity();
 }

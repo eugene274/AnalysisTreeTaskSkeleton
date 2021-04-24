@@ -48,7 +48,7 @@ public:
   }
 
   void UserInit(std::map<std::string, void *> & /* map */) override {
-    BypassBranches();
+//    BypassBranches();
     rec_event_header_vtx_x = GetVar("RecEventHeader/vtx_x");
     rec_event_header_vtx_x.Print();
 

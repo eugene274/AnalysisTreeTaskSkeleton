@@ -84,48 +84,30 @@ void SetValue(const Variable &v, Entity *e, ValueType new_value) {
 
 } // namespace Impl
 float ValueHolder::GetVal() const {
-  return Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(),
-                             data_ptr, [this](auto entity_ptr) {
-        using Entity = std::remove_const_t<std::remove_pointer_t<decltype(entity_ptr)>>;
-        return Impl::ReadValue<Entity, float>(this->v, entity_ptr);
-      });
+  return entity_->GetFloat(v);
 }
 
 int ValueHolder::GetInt() const {
-  return Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(),
-                             data_ptr, [this](auto entity_ptr) {
-        using Entity = std::remove_const_t<std::remove_pointer_t<decltype(entity_ptr)>>;
-        return Impl::ReadValue<Entity, int>(this->v, entity_ptr);
-      });
+  return entity_->GetInt(v);
 }
 
 bool ValueHolder::GetBool() const {
-  return Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(),
-                             data_ptr, [this](auto entity_ptr) {
-        using Entity = std::remove_const_t<std::remove_pointer_t<decltype(entity_ptr)>>;
-        return Impl::ReadValue<Entity, bool>(this->v, entity_ptr);
-      });
+  return entity_->GetBool(v);
 }
 ValueHolder::operator float() const {
   return GetVal();
 }
 void ValueHolder::SetVal(float val) const {
   v.GetParentBranch()->CheckMutable(true);
-  Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(), data_ptr, [this, val](auto entity_ptr) {
-    Impl::SetValue(v, entity_ptr, val);
-  });
+  entity_->Set(v, val);
 }
 void ValueHolder::SetVal(int val) const {
   v.GetParentBranch()->CheckMutable(true);
-  Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(), data_ptr, [this, val](auto entity_ptr) {
-    Impl::SetValue(v, entity_ptr, val);
-  });
+  entity_->Set(v, val);
 }
 void ValueHolder::SetVal(bool val) const {
   v.GetParentBranch()->CheckMutable(true);
-  Impl::ApplyToEntity(v.GetParentBranch()->GetBranchType(), data_ptr, [this, val](auto entity_ptr) {
-    Impl::SetValue(v, entity_ptr, val);
-  });
+  entity_->Set(v, val);
 }
 
 ValueHolder &ValueHolder::operator=(const ValueHolder &other) {

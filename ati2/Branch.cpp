@@ -67,14 +67,6 @@ Variable Branch::GetFieldVar(const std::string &field_name) {
   return v;
 }
 
-Branch::~Branch() {
-  ApplyT([this](auto entry_ptr) {
-    delete entry_ptr;
-  });
-}
-
-
-
 
 Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types type) {
   if (field_name.empty())
@@ -104,9 +96,9 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
   UpdateConfigHash();
 
   /* Init EventHeader */
-  if (AnalysisTree::DetType::kEventHeader == config.GetType()) {
-    ((AnalysisTree::EventHeader *) data)->Init(config);
-  }
+//  if (AnalysisTree::DetType::kEventHeader == config.GetType()) {
+//    ((AnalysisTree::EventHeader *) data)->Init(config);
+//  }
 
   ATI2::Variable v;
   v.name = config.GetName() + "/" + field_name;
@@ -184,23 +176,7 @@ void Branch::CopyContents(Branch *other) {
   }
 
 }
-void Branch::CopyContentsRaw(Branch *other) {
-  if (this == other) {
-    throw std::runtime_error("Copying contents from the same branch makes no sense");
-  }
-  CheckMutable();
-  CheckFrozen();
 
-  if (config_hash != other->config_hash) {
-    throw std::runtime_error("Branch configurations are not consistent.");
-  }
-  auto src_data_ptr = other->data;
-  ApplyT([src_data_ptr](auto dst_data_ptr) {
-    auto typed_src_data_ptr = reinterpret_cast<decltype(dst_data_ptr)>(src_data_ptr);
-    *dst_data_ptr = *typed_src_data_ptr;
-  });
-
-}
 void Branch::CreateMapping(Branch *other) {
   if (copy_fields_mapping.find(other) != copy_fields_mapping.end()) {
     // TODO Warning
@@ -250,19 +226,6 @@ BranchChannelsIter &BranchChannelsIter::operator++() {
 
 BranchChannel Branch::operator[](size_t i_channel) { return BranchChannel(this, i_channel); }
 
-BranchChannel Branch::NewChannel() {
-  CheckMutable(true);
-  ApplyT([this](auto entity_ptr) {
-    if constexpr (is_event_header_v < decltype(entity_ptr) >) {
-      throw std::runtime_error("Not applicable for EventHeader");
-    } else {
-      auto channel = entity_ptr->AddChannel();
-      channel->Init(this->config);
-      Freeze();
-    }
-  });
-  return operator[](size() - 1);
-}
 
 Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config) {
   using AnalysisTree::DetType;
@@ -294,6 +257,11 @@ Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config, void *ptr){
     return new BranchT<AnalysisTree::EventHeader>(config, (AnalysisTree::EventHeader*) ptr);
   }
   assert(false);
+}
+Branch::~Branch() {}
+
+Branch::Branch(AnalysisTree::BranchConfig config) : config(std::move(config)) {
+  UpdateConfigHash();
 }
 
 

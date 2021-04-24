@@ -8,6 +8,7 @@
 
 #include "ATI2_fwd.hpp"
 #include "Variable.hpp"
+#include "EntityWrapper.hpp"
 #include <type_traits>
 
 namespace ATI2 {
@@ -46,11 +47,10 @@ class ValueHolder {
   friend Branch;
   friend BranchChannel;
 
-  ValueHolder(const Variable &v, void *data_ptr)
-      : v(v), data_ptr(data_ptr) {}
+  ValueHolder(const Variable &v, BaseEntity *entity) : v(v), entity_(entity) {}
 
   const Variable &v;
-  void *data_ptr;
+  BaseEntity *entity_{nullptr}; // not owned here
 };
 
 }
