@@ -12,6 +12,7 @@ namespace ATI2 {
 
 struct BaseEntity {
  public:
+  virtual int GetDetType() const = 0;
   virtual void *RawPtr() = 0;
   virtual void Set(const Variable& v, int int_val) = 0;
   virtual void Set(const Variable& v, float float_val) = 0;
@@ -22,10 +23,32 @@ struct BaseEntity {
   virtual bool GetBool(const Variable& v) const = 0;
 };
 
+namespace EntityTraits {
+
+template<typename T>
+struct EntityDetType {};
+
+template<>
+struct EntityDetType<AnalysisTree::EventHeader> { enum { value = static_cast<int>(AnalysisTree::DetType::kEventHeader) }; };
+template<>
+struct EntityDetType<AnalysisTree::Particle> { enum { value = static_cast<int>(AnalysisTree::DetType::kParticle) }; };
+template<>
+struct EntityDetType<AnalysisTree::Track> { enum { value = static_cast<int>(AnalysisTree::DetType::kTrack) }; };
+template<>
+struct EntityDetType<AnalysisTree::Module> { enum { value = static_cast<int>(AnalysisTree::DetType::kModule) }; };
+template<>
+struct EntityDetType<AnalysisTree::Hit> { enum { value = static_cast<int>(AnalysisTree::DetType::kHit) }; };
+
+}
+
 template<typename T>
 struct EntityT : public BaseEntity {
  public:
   explicit EntityT(T *data) : data_(data) {}
+
+  int GetDetType() const override {
+    return EntityTraits::EntityDetType<T>::value;
+  }
 
   void *RawPtr() override {
     return data_;

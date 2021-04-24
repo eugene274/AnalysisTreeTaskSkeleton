@@ -249,7 +249,7 @@ struct BranchT : public Branch {
       throw std::runtime_error("Branch configurations are not consistent.");
     }
 
-    throw std::runtime_error("Not yet implemented");
+    (*data_) = *((BranchT<entity_type> *) other)->data_;
   }
 
  private:

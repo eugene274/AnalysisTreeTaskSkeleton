@@ -240,6 +240,7 @@ Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config) {
   } else if (config.GetType() == DetType::kEventHeader) {
     return new BranchT<AnalysisTree::EventHeader>(config);
   }
+  __builtin_unreachable();
   assert(false);
 }
 
@@ -256,6 +257,7 @@ Branch *Branch::MakeFrom(const AnalysisTree::BranchConfig &config, void *ptr){
   } else if (config.GetType() == DetType::kEventHeader) {
     return new BranchT<AnalysisTree::EventHeader>(config, (AnalysisTree::EventHeader*) ptr);
   }
+  __builtin_unreachable();
   assert(false);
 }
 Branch::~Branch() {}
