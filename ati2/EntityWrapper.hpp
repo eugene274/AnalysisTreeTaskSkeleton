@@ -12,6 +12,7 @@ namespace ATI2 {
 
 struct BaseEntity {
  public:
+  virtual ~BaseEntity() {}
   virtual int GetDetType() const = 0;
   virtual void *RawPtr() = 0;
   virtual void Set(const Variable& v, int int_val) = 0;

@@ -47,7 +47,7 @@ public:
   }
 
   void UserInit(std::map<std::string, void *> & /* map */) override {
-//    BypassBranches();
+    BypassBranches();
     rec_event_header_vtx_x = GetVar("RecEventHeader/vtx_x");
     rec_event_header_vtx_x.Print();
 
@@ -111,9 +111,9 @@ public:
 //      std::cout << vtx_track[vtxtracks_dca_x].GetVal() << "\t"
 //                << processed_track[processed_tracks_dcax].GetVal() << std::endl;
 //      rec_event_header_vtx_x.Print();
-      processed_tracks_vtxx.Print();
-      std::cout << (*rec_event_header)[rec_event_header_vtx_x].GetVal() << "\t"
-                << processed_track[processed_tracks_vtxx].GetVal() << std::endl;
+//      processed_tracks_vtxx.Print();
+//      std::cout << (*rec_event_header)[rec_event_header_vtx_x].GetVal() << "\t"
+//                << processed_track[processed_tracks_vtxx].GetVal() << std::endl;
 
     }
 

@@ -86,8 +86,8 @@ void UserFillTask::ATI2_InitBranchesBypass() {
 }
 void UserFillTask::ATI2_ExecBypass() {
   for (auto &bypass_pair : branches_bypass_) {
-    auto &src = bypass_pair.first;
-    auto &dst = bypass_pair.second;
+    auto src = bypass_pair.first;
+    auto dst = bypass_pair.second;
     dst->CopyContentsRaw(src);
   }
 }

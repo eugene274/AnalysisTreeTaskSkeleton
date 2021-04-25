@@ -43,14 +43,24 @@ class ValueHolder {
   }
   ValueHolder &operator=(const ValueHolder &other);
 
+  ~ValueHolder() {
+    if (is_owns_entity) {
+      delete entity_;
+    }
+  }
+
  private:
   friend Branch;
   friend BranchChannel;
 
   ValueHolder(const Variable &v, BaseEntity *entity) : v(v), entity_(entity) {}
+  ValueHolder(const Variable &v, BaseEntity *entity, bool is_owns_entity)
+      : v(v), entity_(entity), is_owns_entity(is_owns_entity) {}
+ private:
 
   const Variable &v;
-  BaseEntity *entity_{nullptr}; // not owned here
+  BaseEntity *entity_{nullptr};
+  bool is_owns_entity{false};
 };
 
 }

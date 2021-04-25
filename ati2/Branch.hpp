@@ -64,7 +64,7 @@ struct Branch {
     std::vector<std::pair<Variable /* src */, Variable /* dst */>> field_pairs;
   };
 
-  virtual ~Branch();;
+  virtual ~Branch();
 
  protected:
   AnalysisTree::BranchConfig config;
@@ -90,7 +90,7 @@ struct Branch {
   inline std::string GetBranchName() const { return config.GetName(); }
   inline AnalysisTree::DetType GetBranchType() const { return config.GetType(); }
   inline const AnalysisTree::BranchConfig &GetConfig() const { return config; }
-  inline size_t GetConfigHash() const { return config_hash; }
+  inline std::size_t GetConfigHash() const { return config_hash; }
 
   virtual void InitDataPtr() = 0;
   virtual void ConnectOutputTree(TTree *tree) = 0;
@@ -127,7 +127,7 @@ struct Branch {
   inline ValueHolder Value(const Variable &v) const {
     assert(v.IsInitialized());
     assert(v.GetParentBranch() == this);
-    return ValueHolder(v, GetEntity());
+    return ValueHolder(v, GetEntity(), true);
   }
 
   inline ValueHolder operator[](const Variable &v) const { return Value(v); };
@@ -161,7 +161,7 @@ struct Branch {
    * @brief Copies contents from other branch 'as-is'. Faster than CopyContents() since it creates no mapping
    * @param other
    */
-  virtual void CopyContentsRaw(Branch *other) = 0;
+  virtual void CopyContentsRaw(const Branch *other) = 0;
 
   void CreateMapping(Branch *other);
 
@@ -205,6 +205,10 @@ struct BranchT : public Branch {
   BranchT(const AnalysisTree::BranchConfig &config, entity_pointer data) : Branch(config), data_(data) {}
 
  public:
+  ~BranchT() override {
+    delete data_;
+  }
+
   void InitDataPtr() final {
     if (data_) {
       throw std::runtime_error("Data ptr is already initialized");
@@ -240,14 +244,16 @@ struct BranchT : public Branch {
     ClearChannelsImpl(data_);
   }
 
-  void CopyContentsRaw(Branch *other) final {
+  void CopyContentsRaw(const Branch *other) final {
     if (this == other) {
       throw std::runtime_error("Copying contents from the same branch makes no sense");
     }
     CheckMutable();
     CheckFrozen();
 
-    if (GetConfigHash() != other->GetConfigHash()) {
+    auto hash = this->GetConfigHash();
+    auto other_hash = other->GetConfigHash();
+    if ( (int)hash != (int)other_hash) {
       throw std::runtime_error("Branch configurations are not consistent.");
     }
 
