@@ -12,7 +12,7 @@ TaskRegistry &TaskRegistry::Instance() {
 std::vector<std::string> TaskRegistry::GetTaskNames() {
   std::vector<std::string> result;
   std::transform(task_singletons_.begin(), task_singletons_.end(),
-                 std::back_inserter(result), [] (auto &ele) { return ele.first; });
+                 std::back_inserter(result), [] (decltype(task_singletons_)::value_type &ele) { return ele.first; });
   return result;
 }
 

@@ -8,7 +8,6 @@
 #include <TChain.h>
 
 #include <at_task/Task.h>
-#include <at_task/StaticTaskRegistry.h>
 
 #include <AnalysisTree/Detector.hpp>
 #include <AnalysisTree/Module.hpp>

@@ -26,7 +26,7 @@ int TASK_CLASS::REGISTRY_FLAG = TaskRegistry::Instance().RegisterTask<TASK_CLASS
 
 template<typename T>
 [[deprecated("Use T::Instance() instead")]]
-auto GetTaskPtr() {
+T* GetTaskPtr() {
   return T::Instance();
 }
 
