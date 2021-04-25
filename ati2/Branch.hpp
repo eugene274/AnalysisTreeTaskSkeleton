@@ -69,9 +69,9 @@ struct Branch {
  protected:
   AnalysisTree::BranchConfig config;
 
-
  private:
   std::size_t config_hash{0};
+  std::unique_ptr<BaseEntity> entity_ptr{nullptr};
   bool is_mutable{false};
   bool is_frozen{false};
 
@@ -87,8 +87,8 @@ struct Branch {
   explicit Branch(AnalysisTree::BranchConfig config);
 
   /* Accessors to branch' main parameters, used very often */
-  inline auto GetBranchName() const { return config.GetName(); }
-  inline auto GetBranchType() const { return config.GetType(); }
+  inline std::string GetBranchName() const { return config.GetName(); }
+  inline AnalysisTree::DetType GetBranchType() const { return config.GetType(); }
   inline const AnalysisTree::BranchConfig &GetConfig() const { return config; }
   inline size_t GetConfigHash() const { return config_hash; }
 
@@ -98,6 +98,8 @@ struct Branch {
   virtual BaseEntity *GetEntity(size_t channel) const = 0;
 
   Variable GetFieldVar(const std::string &field_name);
+
+#if __cplusplus >= 201402L
   /**
    * @brief Gets variables according to variable names specified in the arguments.
    * Returns tuple of variables which is suitable for unpacking with std::tie()
@@ -110,6 +112,8 @@ struct Branch {
     return GetVarsImpl(std::array<std::string, sizeof...(Args)>{{std::string(field_name)...}},
                        std::make_index_sequence<sizeof...(Args)>());
   }
+#endif
+
   /**
    * @brief Initializes ATI2::Variable objects
    * @param vars - vector of pairs with name and reference to the ATI2::Variable object
@@ -163,20 +167,18 @@ struct Branch {
 
   void UpdateConfigHash();
 
-  template<typename EntityPtr>
-  constexpr static const bool is_event_header_v =
-      std::is_same_v<AnalysisTree::EventHeader, std::remove_const_t<std::remove_pointer_t<EntityPtr>>>;
-
   AnalysisTree::ShortInt_t Hash() const {
     const auto hasher = std::hash<std::string>();
     return AnalysisTree::ShortInt_t(hasher(config.GetName()));
   }
  private:
 
+#if __cplusplus > 201402L
   template<size_t ... Idx>
   auto GetVarsImpl(std::array<std::string, sizeof ... (Idx)> &&field_names, std::index_sequence<Idx...>) {
     return std::make_tuple(GetFieldVar(field_names[Idx])...);
   }
+#endif
 
  public:
   /* factory functions */
@@ -265,7 +267,7 @@ struct BranchT : public Branch {
   template<typename T>
   static
   BaseEntity *GetEntityImpl(AnalysisTree::Detector<T> *entity, size_t channel) {
-    return new EntityT(&entity->GetChannel(channel));
+    return new EntityT<T>(&entity->GetChannel(channel));
   }
   static
   BaseEntity *GetEntityImpl(AnalysisTree::EventHeader *entity, size_t channel) {
@@ -279,7 +281,7 @@ struct BranchT : public Branch {
   }
   static
   BaseEntity *GetEntityImpl(AnalysisTree::EventHeader *entity) {
-    return new EntityT(entity);
+    return new EntityT<AnalysisTree::EventHeader>(entity);
   }
 
   template<typename T>
