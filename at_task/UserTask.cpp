@@ -50,8 +50,8 @@ void UserFillTask::ATI2_Load(std::map<std::string, void *> &map) {
   assert(UseATI2());
   for (auto &item : config_->GetBranchConfigs()) {
 #if ANALYSISTREE_VERSION_MAJOR == 1
-    auto branch_name = config.GetName();
-    auto &branch_config = config;
+    auto branch_name = item.GetName();
+    auto &branch_config = item;
 #else
     auto branch_name = item.second.GetName();
     auto &branch_config = item.second;

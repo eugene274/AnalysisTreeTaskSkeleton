@@ -9,6 +9,8 @@
 #include "Variable.hpp"
 #include "Branch.hpp"
 #include <AnalysisTree/Constants.hpp>
+#include <AnalysisTree/AnalysisTreeVersion.hpp>
+
 
 #include <string>
 
@@ -20,6 +22,7 @@
 
 using namespace ATI2;
 
+#if ANALYSISTREE_VERSION_MAJOR > 1
 namespace std {
   template<> struct hash<AnalysisTree::ConfigElement> {
     std::size_t operator() (AnalysisTree::ConfigElement const &c) const {
@@ -27,6 +30,7 @@ namespace std {
     }
   };
 }
+#endif
 
 namespace Impl {
 
