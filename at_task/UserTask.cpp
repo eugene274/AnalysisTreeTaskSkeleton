@@ -9,6 +9,7 @@
 #include <TFile.h>
 #include <AnalysisTree/EventHeader.hpp>
 #include <AnalysisTree/Detector.hpp>
+#include <AnalysisTree/AnalysisTreeVersion.hpp>
 
 using namespace ATI2;
 
@@ -47,8 +48,14 @@ ATI2::Branch *UserFillTask::NewBranch(const std::string &branch_name, const Anal
 
 void UserFillTask::ATI2_Load(std::map<std::string, void *> &map) {
   assert(UseATI2());
-  for (auto &config : config_->GetBranchConfigs()) {
+  for (auto &item : config_->GetBranchConfigs()) {
+#if ANALYSISTREE_VERSION_MAJOR == 1
     auto branch_name = config.GetName();
+    auto &branch_config = config;
+#else
+    auto branch_name = item.second.GetName();
+    auto &branch_config = item.second;
+#endif
 
     auto data_ptr_it = map.find(branch_name);
     if (data_ptr_it == map.end()) {
@@ -57,7 +64,7 @@ void UserFillTask::ATI2_Load(std::map<std::string, void *> &map) {
       continue;
     }
 
-    auto branch = std::make_unique<Branch>(config, data_ptr_it->second);
+    auto branch = std::make_unique<Branch>(branch_config, data_ptr_it->second);
     branch->parent_config = config_;
     branch->is_connected_to_input = true;
     branch->SetMutable(false);
@@ -97,10 +104,12 @@ void UserFillTask::ATI2_Finish() {
     *out_config_ = AnalysisTree::Configuration(GetName());
     for (auto &branch_item : branches_out_) {
       out_config_->AddBranchConfig(branch_item.second->GetConfig());
+#if ANALYSISTREE_VERSION_MAJOR == 1
       // overriding id with hash
       // see: https://github.com/HeavyIonAnalysis/AnalysisTree/issues/57
       auto &config = out_config_->GetBranchConfig(branch_item.first);
       config.SetId(branch_item.second->Hash());
+#endif
     }
     out_config_->Print();
     if (out_file_) {

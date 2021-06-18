@@ -4,13 +4,28 @@
 
 #include <boost/program_options.hpp>
 
+#include <AnalysisTree/AnalysisTreeVersion.hpp>
+#if ANALYSISTREE_VERSION_MAJOR == 1
 #include <AnalysisTree/TaskManager.hpp>
+#else
+// Fallback into compatibility mode
+#include <AnalysisTree/infra-1.0/TaskManager.hpp>
+#endif
+
 #include <AnalysisTreeCutsRegistry/CutsRegistry.hpp>
 
 #include "TaskRegistry.h"
 
 using namespace std;
-using namespace AnalysisTree;
+
+#if ANALYSISTREE_VERSION_MAJOR == 1
+using Cuts = AnalysisTree::Cuts;
+using TaskManager = AnalysisTree::TaskManager;
+#else
+// Fallback into compatibility mode
+using Cuts = AnalysisTree::Version1::Cuts;
+using TaskManager = AnalysisTree::Version1::TaskManager;
+#endif
 
 void conflicting_options(const boost::program_options::variables_map &vm,
                          const std::string &opt1, const std::string &opt2) {
@@ -137,7 +152,7 @@ int main(int argc, char **argv) {
   TaskManager task_manager(at_filelists, tree_names);
 
   if (cuts_macro_count) {
-    LoadCutsFromFile(cuts_macro.c_str());
+    AnalysisTree::LoadCutsFromFile(cuts_macro.c_str());
   }
 
   if (event_cuts_count) {
