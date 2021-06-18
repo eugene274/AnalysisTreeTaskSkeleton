@@ -20,6 +20,14 @@
 
 using namespace ATI2;
 
+namespace std {
+  template<> struct hash<AnalysisTree::ConfigElement> {
+    std::size_t operator() (AnalysisTree::ConfigElement const &c) const {
+      return std::hash<decltype(c.id_)>{}(c.id_);
+    }
+  };
+}
+
 namespace Impl {
 
 inline void hash_combine(std::size_t &seed) {}
@@ -37,7 +45,7 @@ std::size_t BranchConfigHasher(const AnalysisTree::BranchConfig &config) {
   std::size_t hash = 0;
   hash_combine(hash, config.GetType());
 
-  auto hash_fields = [&hash](const std::map<std::string, Short_t> &fields_map, Type field_type) {
+  auto hash_fields = [&hash](const auto &fields_map, Type field_type) {
     for (auto &field : fields_map) {
       hash_combine(hash, field.first, field.second, field_type);
     }
@@ -147,7 +155,7 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
 }
 
 void Branch::CloneVariables(const AnalysisTree::BranchConfig &other) {
-  auto import_fields_from_map = [this](const std::map<std::string, short> &map, AnalysisTree::Types type) {
+  auto import_fields_from_map = [this](const auto &map, AnalysisTree::Types type) {
     for (auto &element : map) {
       auto field_name = element.first;
       if (HasField(field_name)) {
@@ -174,7 +182,7 @@ void Branch::ClearChannels() {
   });
 }
 bool Branch::HasField(const std::string &field_name) const {
-  auto has_field = [&field_name](const std::map<std::string, Short_t> &map) {
+  auto has_field = [&field_name](const auto &map) {
     return map.find(field_name) != map.end();
   };
   return has_field(config.GetMap<float>()) ||
@@ -183,7 +191,7 @@ bool Branch::HasField(const std::string &field_name) const {
 }
 std::vector<std::string> Branch::GetFieldNames() const {
   std::vector<std::string> result;
-  auto fill_vector_from_map = [&result](const std::map<std::string, short> &fields_map) -> void {
+  auto fill_vector_from_map = [&result](const auto &fields_map) -> void {
     for (auto &element : fields_map) {
       result.push_back(element.first);
     }

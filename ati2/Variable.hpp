@@ -8,6 +8,7 @@
 #include "ATI2_fwd.hpp"
 
 #include <string>
+#include <iostream>
 #include <AnalysisTree/Constants.hpp>
 
 namespace ATI2 {
