@@ -1,5 +1,5 @@
 
-find_package(ROOT REQUIRED COMPONENTS Core Tree)
+find_package(ROOT REQUIRED COMPONENTS Core Tree EG)
 
 set(ATI2_SOURCES Branch.cpp ValueHolder.cpp BranchChannel.cpp Variable.cpp)
 list(APPEND ATI2_RELEASE_OPTIONS "-O2")

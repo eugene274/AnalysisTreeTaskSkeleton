@@ -20,7 +20,8 @@ target_link_libraries(at_task  PUBLIC
         ati2_static
         AnalysisTreeCutsRegistry
         Boost::program_options
-        ROOT::Core)
+        ROOT::Core
+        )
 target_compile_definitions(
         at_task PUBLIC
         AT_INFRA_VERSION=$<IF:$<TARGET_EXISTS:AnalysisTreeInfraVersion1>,1,0>

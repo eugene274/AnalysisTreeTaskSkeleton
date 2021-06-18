@@ -12,7 +12,7 @@
 #include <AnalysisTree/infra-1.0/TaskManager.hpp>
 #endif
 
-#include <AnalysisTreeCutsRegistry/CutsRegistry.hpp>
+//#include <AnalysisTreeCutsRegistry/CutsRegistry.hpp>
 
 #include "TaskRegistry.h"
 
@@ -151,13 +151,13 @@ int main(int argc, char **argv) {
 
   TaskManager task_manager(at_filelists, tree_names);
 
-  if (cuts_macro_count) {
-    AnalysisTree::LoadCutsFromFile(cuts_macro.c_str());
-  }
-
-  if (event_cuts_count) {
-    task_manager.SetEventCuts(new Cuts(gCutsRegistry.at(event_cuts)));
-  }
+//  if (cuts_macro_count) {
+//    AnalysisTree::LoadCutsFromFile(cuts_macro.c_str());
+//  }
+//
+//  if (event_cuts_count) {
+//    task_manager.SetEventCuts(new Cuts(gCutsRegistry.at(event_cuts)));
+//  }
 
   std::vector<UserTask *> task_ptrs;
   task_ptrs.reserve(tasks_to_use.size());
