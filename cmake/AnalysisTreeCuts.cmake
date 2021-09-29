@@ -1,7 +1,7 @@
 include(FetchContent)
 FetchContent_Declare(
         AnalysisTreeCuts
-        GIT_REPOSITORY https://git.cbm.gsi.de/pwg-c2f/analysis/cuts.git
+        GIT_REPOSITORY https://github.com/HeavyIonAnalysis/AnalysisTreeCuts.git
 )
 
 FetchContent_GetProperties(AnalysisTreeCuts)
