@@ -37,15 +37,16 @@ std::size_t BranchConfigHasher(const AnalysisTree::BranchConfig &config) {
   std::size_t hash = 0;
   hash_combine(hash, config.GetType());
 
-  auto hash_fields = [&hash](const std::map<std::string, Short_t> &fields_map, Type field_type) {
-    for (auto &field : fields_map) {
-      hash_combine(hash, field.first, field.second, field_type);
+  auto hash_fields = [&config,&hash](const std::vector<std::string> &field_names, Type field_type) {
+    for (auto &field_name : field_names) {
+      auto field_id = config.GetFieldType(field_name);
+      hash_combine(hash, field_name, field_id, field_type);
     }
   };
 
-  hash_fields(config.GetMap<float>(), Type::kFloat);
-  hash_fields(config.GetMap<int>(), Type::kInteger);
-  hash_fields(config.GetMap<bool>(), Type::kBool);
+  hash_fields(config.GetFieldsNamesT<float>(), Type::kFloat);
+  hash_fields(config.GetFieldsNamesT<int>(), Type::kInteger);
+  hash_fields(config.GetFieldsNamesT<bool>(), Type::kBool);
   return hash;
 }
 
@@ -147,9 +148,8 @@ Variable Branch::NewVariable(const std::string &field_name, AnalysisTree::Types 
 }
 
 void Branch::CloneVariables(const AnalysisTree::BranchConfig &other) {
-  auto import_fields_from_map = [this](const std::map<std::string, short> &map, AnalysisTree::Types type) {
-    for (auto &element : map) {
-      auto field_name = element.first;
+  auto import_fields_from_map = [this](const std::vector<std::string> &field_names, AnalysisTree::Types type) {
+    for (auto &field_name : field_names) {
       if (HasField(field_name)) {
         std::cout << "Field '" << field_name << "' already exists" << std::endl;
         continue;
@@ -158,9 +158,9 @@ void Branch::CloneVariables(const AnalysisTree::BranchConfig &other) {
     } // map elements
   };
 
-  import_fields_from_map(other.GetMap<float>(), AnalysisTree::Types::kFloat);
-  import_fields_from_map(other.GetMap<int>(), AnalysisTree::Types::kInteger);
-  import_fields_from_map(other.GetMap<bool>(), AnalysisTree::Types::kBool);
+  import_fields_from_map(other.GetFieldsNamesT<float>(), AnalysisTree::Types::kFloat);
+  import_fields_from_map(other.GetFieldsNamesT<int>(), AnalysisTree::Types::kInteger);
+  import_fields_from_map(other.GetFieldsNamesT<bool>(), AnalysisTree::Types::kBool);
 }
 
 void Branch::ClearChannels() {
@@ -174,23 +174,21 @@ void Branch::ClearChannels() {
   });
 }
 bool Branch::HasField(const std::string &field_name) const {
-  auto has_field = [&field_name](const std::map<std::string, Short_t> &map) {
-    return map.find(field_name) != map.end();
+  auto has_field = [&field_name](const std::vector<std::string> &field_names) {
+    return find(begin(field_names), end(field_names), field_name) != field_names.end();
   };
-  return has_field(config.GetMap<float>()) ||
-      has_field(config.GetMap<int>()) ||
-      has_field(config.GetMap<bool>());
+  return has_field(config.GetFieldsNamesT<float>()) ||
+      has_field(config.GetFieldsNamesT<int>()) ||
+      has_field(config.GetFieldsNamesT<bool>());
 }
 std::vector<std::string> Branch::GetFieldNames() const {
   std::vector<std::string> result;
-  auto fill_vector_from_map = [&result](const std::map<std::string, short> &fields_map) -> void {
-    for (auto &element : fields_map) {
-      result.push_back(element.first);
-    }
+  auto append_vector = [](std::vector<std::string>&v,  const std::vector<std::string> &fields) -> void {
+    v.insert(end(v), begin(fields), end(fields));
   };
-  fill_vector_from_map(config.GetMap<float>());
-  fill_vector_from_map(config.GetMap<int>());
-  fill_vector_from_map(config.GetMap<bool>());
+  append_vector(result, config.GetFieldsNamesT<float>());
+  append_vector(result, config.GetFieldsNamesT<int>());
+  append_vector(result, config.GetFieldsNamesT<bool>());
   return result;
 }
 void Branch::CopyContents(Branch *other) {

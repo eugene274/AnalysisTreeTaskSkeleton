@@ -6,7 +6,16 @@
 #define ANALYSISTREESKELETON_TASK_MAIN_USERTASK_H
 
 #include <boost/program_options.hpp>
-#include <AnalysisTree/FillTask.hpp>
+#include <AnalysisTreeVersion.hpp>
+
+#if ANALYSISTREE_VERSION_MAJOR == 1
+# include <AnalysisTree/FillTask.hpp>
+# define ANALYSISTREE_FILLTASK ::AnalysisTree::FillTask
+#elif ANALYSISTREE_VERSION_MAJOR == 2
+# include <AnalysisTree/infra-1.0/FillTask.hpp>
+# define ANALYSISTREE_FILLTASK ::AnalysisTree::Version1::FillTask
+#endif
+
 #include <AnalysisTree/EventHeader.hpp>
 #include <AnalysisTree/Detector.hpp>
 #include <TTree.h>
@@ -21,7 +30,7 @@ class UserTask {
   virtual ~UserTask() = default;
   virtual std::string GetName() const { return ""; }
   virtual size_t GetPriority() const { return 0l; }
-  virtual AnalysisTree::FillTask *FillTaskPtr() = 0;
+  virtual ANALYSISTREE_FILLTASK *FillTaskPtr() = 0;
 
   virtual boost::program_options::options_description GetBoostOptions() { return {}; }
   virtual void ProcessBoostVM(const boost::program_options::variables_map &vm) { (void) vm; }
@@ -44,10 +53,10 @@ class UserTask {
   std::size_t order_no_{0};
 };
 
-class UserFillTask : public UserTask, public AnalysisTree::FillTask {
+class UserFillTask : public UserTask, public ANALYSISTREE_FILLTASK {
  public:
   virtual ~UserFillTask() = default;
-  AnalysisTree::FillTask *FillTaskPtr() final {
+  ANALYSISTREE_FILLTASK *FillTaskPtr() final {
     return this;
   }
 
