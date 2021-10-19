@@ -4,7 +4,7 @@
 
 #include <boost/program_options.hpp>
 
-#include <AnalysisTreeVersion.hpp>
+#include <AnalysisTree/AnalysisTreeVersion.hpp>
 #if ANALYSISTREE_VERSION_MAJOR == 1
 # include <AnalysisTree/TaskManager.hpp>
 #elif ANALYSISTREE_VERSION_MAJOR == 2

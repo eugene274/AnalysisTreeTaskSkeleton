@@ -6,7 +6,7 @@
 #define ANALYSISTREESKELETON_TASK_MAIN_USERTASK_H
 
 #include <boost/program_options.hpp>
-#include <AnalysisTreeVersion.hpp>
+#include <AnalysisTree/AnalysisTreeVersion.hpp>
 
 #if ANALYSISTREE_VERSION_MAJOR == 1
 # include <AnalysisTree/FillTask.hpp>
