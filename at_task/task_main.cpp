@@ -4,13 +4,22 @@
 
 #include <boost/program_options.hpp>
 
-#include <AnalysisTree/TaskManager.hpp>
+#include <AnalysisTree/AnalysisTreeVersion.hpp>
+#if ANALYSISTREE_VERSION_MAJOR == 1
+# include <AnalysisTree/TaskManager.hpp>
+#elif ANALYSISTREE_VERSION_MAJOR == 2
+# include <AnalysisTree/infra-1.0/TaskManager.hpp>
+#endif
+
 #include <AnalysisTreeCutsRegistry/CutsRegistry.hpp>
 
 #include "TaskRegistry.h"
 
 using namespace std;
 using namespace AnalysisTree;
+#if ANALYSISTREE_VERSION_MAJOR == 2
+using namespace AnalysisTree::Version1;
+#endif
 
 void conflicting_options(const boost::program_options::variables_map &vm,
                          const std::string &opt1, const std::string &opt2) {

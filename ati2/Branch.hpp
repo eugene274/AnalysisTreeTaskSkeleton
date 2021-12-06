@@ -111,7 +111,7 @@ struct Branch {
    * @param vars - vector of pairs with name and reference to the ATI2::Variable object
    */
   void UseFields(std::vector<std::pair<std::string, std::reference_wrapper<Variable>>> &&vars, bool ignore_missing = false);
-  bool HasField(const std::string &field_name) const;
+  bool HasField(const std::string &field_names) const;
   std::vector<std::string> GetFieldNames() const;
 
   /* Getting value */
@@ -148,7 +148,7 @@ struct Branch {
   BranchChannel NewChannel();
   void ClearChannels();
   Variable NewVariable(const std::string &field_name, AnalysisTree::Types type);
-  void CloneVariables(const AnalysisTree::BranchConfig& other);
+  void CloneVariables(const AnalysisTree::BranchConfig& field_names);
   void CopyContents(Branch *br);
 
   /**

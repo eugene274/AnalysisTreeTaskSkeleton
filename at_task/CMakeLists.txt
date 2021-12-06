@@ -17,6 +17,7 @@ add_library(at_task STATIC ${SOURCES} ${HEADERS} StaticTaskRegistry.h)
 target_link_libraries(at_task  PUBLIC
         AnalysisTreeBase
         AnalysisTreeInfra
+        $<TARGET_NAME_IF_EXISTS:AnalysisTreeInfraVersion1>
         ati2_static
         AnalysisTreeCutsRegistry
         Boost::program_options
