@@ -1,22 +1,31 @@
 
 
-include(FetchContent)
-FetchContent_Declare(
-        AnalysisTree
-        GIT_REPOSITORY https://github.com/HeavyIonAnalysis/AnalysisTree.git
-        GIT_TAG        ${AnalysisTree_GIT_TAG}
-)
 
-FetchContent_GetProperties(AnalysisTree)
+if (NOT AnalysisTree_FOUND)
+    if (NOT ${AnalysisTree_HOME} STREQUAL "")
+        message("Looking for AnalysisTree in ${AnalysisTree_HOME} directory")
+        list(APPEND CMAKE_PREFIX_PATH ${AnalysisTree_HOME})
+        find_package(AnalysisTree REQUIRED)
+    else ()
+        include(FetchContent)
+        FetchContent_Declare(AnalysisTree
+                GIT_REPOSITORY "https://github.com/HeavyIonAnalysis/AnalysisTree.git"
+                GIT_TAG ${AnalysisTree_GIT_TAG}
+                UPDATE_DISCONNECTED ${UPDATE_DISCONNECTED}
+                )
 
-if (NOT analysistree_POPULATED)
-    FetchContent_Populate(AnalysisTree)
+        set(AnalysisTree_BUILD_EXAMPLES OFF)
 
-    set(AnalysisTree_BUILD_EXAMPLES OFF)
-    # there is no machinery to set variable for nested subdirectory only :C
-    set(CMAKE_BUILD_TYPE_SAVED ${CMAKE_BUILD_TYPE})
-    set(CMAKE_BUILD_TYPE ${AnalysisTree_BUILD_TYPE})
-    add_subdirectory(${analysistree_SOURCE_DIR} ${analysistree_BINARY_DIR})
-    set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_SAVED})
+        FetchContent_GetProperties(AnalysisTree)
+        if (NOT analysistree_POPULATED)
+            FetchContent_Populate(AnalysisTree)
+            add_subdirectory(${analysistree_SOURCE_DIR} ${analysistree_BINARY_DIR})
+        endif ()
 
-endif ()
+        get_target_property(AnalysisTreeBase_INCLUDE_DIR AnalysisTreeBase INCLUDE_DIRECTORIES)
+        list(APPEND PROJECT_INCLUDE_DIRECTORIES ${AnalysisTreeBase_INCLUDE_DIR})
+        get_target_property(AnalysisTreeInfra_INCLUDE_DIR AnalysisTreeInfra INCLUDE_DIRECTORIES)
+        list(APPEND PROJECT_INCLUDE_DIRECTORIES ${AnalysisTreeInfra_INCLUDE_DIR})
+        set(AnalysisTree_FOUND True)
+    endif ()
+endif (NOT AnalysisTree_FOUND)
