@@ -2,6 +2,7 @@
 find_package(ROOT REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options filesystem)
 
+include_directories(${CMAKE_BINARY_DIR}/_deps/analysistree-build/include)
 list(APPEND SOURCES
         TaskRegistry.cpp
         UserTask.cpp
