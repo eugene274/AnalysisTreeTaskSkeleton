@@ -2,6 +2,7 @@
 find_package(ROOT REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options filesystem)
 
+include_directories(${AnalysisTree_BINARY_DIR}/include)
 list(APPEND SOURCES
         TaskRegistry.cpp
         UserTask.cpp
