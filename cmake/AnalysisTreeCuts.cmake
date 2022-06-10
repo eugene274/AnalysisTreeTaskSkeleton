@@ -2,7 +2,7 @@ include(FetchContent)
 FetchContent_Declare(
         AnalysisTreeCuts
         GIT_REPOSITORY https://github.com/HeavyIonAnalysis/AnalysisTreeCuts.git
-        GIT_TAG "at-v2"
+        GIT_TAG "73f21801fcc8fbc5bb898d195bcf4edaa5330cb9"
 )
 
 FetchContent_GetProperties(AnalysisTreeCuts)
