@@ -1,4 +1,6 @@
+find_package(AnalysisTree QUIET)
 
+if(NOT AnalysisTree_FOUND)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -20,3 +22,5 @@ if (NOT analysistree_POPULATED)
     set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_SAVED})
 
 endif ()
+
+endif()
